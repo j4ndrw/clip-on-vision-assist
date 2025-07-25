@@ -4,8 +4,19 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+fastapi = {extras = ["standard"], version = "*"}
+openai = "1.97.1"
+piper-tts = "*"
+pydub = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+opencv-python = "*"
+openwakeword = "*"
+vosk = "*"
+numpy = "1.26.4"
 
 [dev-packages]
+black = "*"
+isort = "*"
 
 [requires]
 python_version = "3.10"

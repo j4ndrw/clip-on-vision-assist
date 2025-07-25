@@ -4,8 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+uvicorn = {extras = ["standard"], version = "*"}
+fastapi = {extras = ["standard"], version = "*"}
+opencv-python = "*"
+pydub = "*"
+pyaudio = "*"
+httpx = "*"
 
 [dev-packages]
+black = "*"
+isort = "*"
 
 [requires]
 python_version = "3.10"
