@@ -69,8 +69,8 @@ class ComputeServerHandlers:
     def handle_ai_speech(ai_stream_response: dict[str, Any]):
         chunk_data = base64.b64decode(ai_stream_response["data"])
         chunk_sample_width = ai_stream_response["sample_width"]
-        chunk_frame_rate = ai_stream_response["sample_rate"]
-        chunk_channels = ai_stream_response["sample_channels"]
+        chunk_frame_rate = ai_stream_response["frame_rate"]
+        chunk_channels = ai_stream_response["channels"]
 
         segment = pydub.AudioSegment.from_raw(
             io.BytesIO(chunk_data),

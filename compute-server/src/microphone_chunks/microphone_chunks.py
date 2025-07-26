@@ -1,5 +1,6 @@
-from src.state.state import states
 from uuid import uuid4
+
+from src.state.state import states
 
 MAX_MICROPHONE_CHUNKS = 500
 

@@ -3,6 +3,7 @@ import io
 import json
 
 import numpy as np
+from openai.types.shared.chat_model import ChatModel
 import openwakeword.model
 import pydub
 import pydub.playback
@@ -38,7 +39,7 @@ def handle_microphone_ready_state(wakeword_model: openwakeword.model.Model):
         wakeword_model.predict(np.frombuffer(chunk, dtype=np.int16))
         for model in wakeword_model.prediction_buffer.keys():
             score = list(wakeword_model.prediction_buffer[model])[-1]
-            is_wakeword_detected = score > 0.5
+            is_wakeword_detected = score > 0.8
             if is_wakeword_detected:
                 microphone_chunks.clear()
                 states["microphone"] = "pending"
@@ -80,6 +81,8 @@ def handle_microphone_done_state():
 
 last_yielded_value = ""
 last_mutation_id = ""
+
+
 def ai_stream_generator(
     *,
     speech_client: SpeechClient,
@@ -87,6 +90,7 @@ def ai_stream_generator(
     wakeword_model: openwakeword.model.Model,
     stt_model: vosk.Model,
     chat_history: ChatHistory,
+    llm: ChatModel | str,
 ):
     global last_yielded_value
     global last_mutation_id
@@ -105,18 +109,18 @@ def ai_stream_generator(
             for chunk in microphone_chunks:
                 buf += chunk
             rec.AcceptWaveform(buf)
-            prompt = json.loads(rec.FinalResult())['text']
+            prompt = json.loads(rec.FinalResult())["text"]
 
-            for chunk in speech_client.stream(
-                text_stream=llm_client.stream(
-                    model="gemma3:4b",
-                    chat_history=chat_history.reset()
-                    .add_system_message(SYSTEM_PROMPT)
-                    .add_user_message(prompt, camera_frames),
-                )
-            ):
+            llm_text_stream = llm_client.stream(
+                model=llm,
+                chat_history=chat_history.reset()
+                .add_system_message(SYSTEM_PROMPT)
+                .add_user_message(prompt, camera_frames),
+            )
+            for chunk in speech_client.stream(text_stream=llm_text_stream):
                 yield AI_SPEECH(chunk)
 
+            last_yielded_value = ""
             handle_microphone_done_state()
         else:
             match microphone_state:

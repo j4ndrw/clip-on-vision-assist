@@ -1,4 +1,5 @@
 import openai
+from openai.types.shared.chat_model import ChatModel
 
 from src.llm.history import ChatHistory
 
@@ -12,7 +13,7 @@ class LLMClient:
     def get(self) -> openai.OpenAI:
         return self._client
 
-    def stream(self, *, model: str, chat_history: ChatHistory):
+    def stream(self, *, model: ChatModel | str, chat_history: ChatHistory):
         with self._client.chat.completions.stream(
             model=model,
             messages=chat_history,

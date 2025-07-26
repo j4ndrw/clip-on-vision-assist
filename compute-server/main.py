@@ -56,6 +56,7 @@ async def ai_stream():
             wakeword_model=wakeword_model,
             stt_model=stt_model,
             chat_history=chat_history,
+            llm="qwen2.5vl:3b",
         ),
         media_type="text/event-stream",
     )
