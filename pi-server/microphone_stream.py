@@ -48,6 +48,7 @@ class ComputeServerHandlers:
     def handle_stop_listening(dependencies: dict[str, Any]):
         microphone_stream = dependencies["microphone_stream"]
 
+        # TODO: Replace this with the Picamera2 API
         camera = cv2.VideoCapture(0)
         ret, frame = camera.read()
         camera.release()
