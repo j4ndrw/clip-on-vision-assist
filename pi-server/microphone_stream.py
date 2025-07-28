@@ -2,7 +2,9 @@ import asyncio
 import base64
 import io
 import json
-from typing import Any, AsyncIterator
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from typing import Any, AsyncIterator, Callable
 
 import cv2
 import httpx
@@ -10,167 +12,179 @@ import pyaudio
 import pydub
 import pydub.playback
 
-chunk_size = 1024
-sample_format = pyaudio.paInt16
-channels = 1
-sample_rate = 16000
+CHUNK_SIZE = 1024
+SAMPLE_FORMAT = pyaudio.paInt16
+CHANNELS = 1
+SAMPLE_RATE = 16000
 
-class ComputeServerHandlers:
-    KEEP_LISTENING_TYPE = "keep-listening"
-    STOP_LISTENING_TYPE = "stop-listening"
-    AI_SPEECH_TYPE = "ai-speech"
 
-    @staticmethod
-    def handle_keep_listening(
-        p: pyaudio.PyAudio, dependencies: dict[str, Any]
-    ):
-        microphone_stream: pyaudio.Stream | None = dependencies["microphone_stream"]
-        if microphone_stream is None:
-            microphone_stream = p.open(
-                format=sample_format,
-                channels=channels,
-                rate=sample_rate,
-                frames_per_buffer=chunk_size,
+class StreamEventType(Enum):
+    KEEP_LISTENING = "keep-listening"
+    STOP_LISTENING = "stop-listening"
+    AI_SPEECH = "ai-speech"
+    UNKNOWN = auto()
+
+
+@dataclass
+class State:
+    type: StreamEventType | None = field(default=None)
+    task: Callable[[], Any] | None = field(default=None)
+
+
+class AIStreamClient:
+    def __init__(self):
+        self.p = pyaudio.PyAudio()
+        self.microphone_stream: pyaudio.Stream | None = None
+
+    def start_mic(self) -> None:
+        if self.microphone_stream is None:
+            self.microphone_stream = self.p.open(
+                format=SAMPLE_FORMAT,
+                channels=CHANNELS,
+                rate=SAMPLE_RATE,
+                frames_per_buffer=CHUNK_SIZE,
                 input=True,
             )
-        if microphone_stream.is_stopped():
-            microphone_stream.start_stream()
+        if self.microphone_stream.is_stopped():
+            self.microphone_stream.start_stream()
 
-        buf = b""
-        for _ in range(0, int(sample_rate / chunk_size)):
-            chunk = microphone_stream.read(chunk_size)
-            buf += chunk
+    def stop_mic(self) -> None:
+        if self.microphone_stream and not self.microphone_stream.is_stopped():
+            self.microphone_stream.stop_stream()
 
-        ComputeServerRequests.send_microphone_input(buf)
-        return microphone_stream
+    def read_audio_chunk(self) -> bytes:
+        assert (
+            self.microphone_stream is not None
+        ), "Cannot read from the microphone stream - it was not instantiated."
 
-    @staticmethod
-    def handle_stop_listening(dependencies: dict[str, Any]):
-        microphone_stream = dependencies["microphone_stream"]
+        return b"".join(
+            self.microphone_stream.read(CHUNK_SIZE)
+            for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE))
+        )
 
-        # TODO: Replace this with the Picamera2 API
+    def capture_image(self) -> str:
         camera = cv2.VideoCapture(0)
         ret, frame = camera.read()
         camera.release()
 
         if not ret:
-            raise Exception(
-                "Could not take picture with camera - something went wrong..."
-            )
+            raise RuntimeError("Camera capture failed.")
 
-        frame = base64.b64encode(cv2.imencode(".png", frame)[1].tobytes()).decode(
-            "utf-8"
-        )
-        ComputeServerRequests.send_camera_frames([frame])
+        img_bytes = cv2.imencode(".png", frame)[1].tobytes()
+        return base64.b64encode(img_bytes).decode("utf-8")
 
-        if microphone_stream is not None:
-            microphone_stream.stop_stream()
-
-    @staticmethod
-    def handle_ai_speech(ai_stream_response: dict[str, Any]):
-        chunk_data = base64.b64decode(ai_stream_response["data"])
-        chunk_sample_width = ai_stream_response["sample_width"]
-        chunk_frame_rate = ai_stream_response["frame_rate"]
-        chunk_channels = ai_stream_response["channels"]
-
+    def play_audio_chunk_from_response(self, r: dict[str, Any]) -> None:
+        chunk = base64.b64decode(r["data"])
         segment = pydub.AudioSegment.from_raw(
-            io.BytesIO(chunk_data),
-            sample_width=chunk_sample_width,
-            frame_rate=chunk_frame_rate,
-            channels=chunk_channels,
+            io.BytesIO(chunk),
+            sample_width=r["sample_width"],
+            frame_rate=r["frame_rate"],
+            channels=r["channels"],
         )
         pydub.playback.play(segment)
 
 
-class ComputeServerRequests:
-    SEND_CAMERA_FRAMES_ENDPOINT = "http://localhost:8000/api/camera-frames"
-    SEND_MICROPHONE_INPUT_ENDPOINT = "http://localhost:8000/api/microphone-stream"
-    READ_AI_RESPONSE_ENDPOINT = "http://localhost:8000/api/ai-stream"
+class AIStreamTasks:
+    def __init__(self, *, client: AIStreamClient):
+        self.client = client
 
-    @staticmethod
-    def send_microphone_input(chunk: bytes):
-        response = httpx.post(
-            ComputeServerRequests.SEND_MICROPHONE_INPUT_ENDPOINT,
+    def keep_listening(self):
+        def task():
+            self.client.start_mic()
+            API.send_audio(self.client.read_audio_chunk())
+            return self.client.microphone_stream
+
+        return task
+
+    def stop_listening_and_send_image(self):
+        def task():
+            self.client.stop_mic()
+            API.send_image(self.client.capture_image())
+
+        return task
+
+    def ai_speech(self, msg: Any):
+        def task():
+            self.client.play_audio_chunk_from_response(msg)
+
+        return task
+
+
+class API:
+    BASE_URL = "http://localhost:8000/api"
+
+    @classmethod
+    def send_audio(cls, chunk: bytes) -> None:
+        r = httpx.post(
+            f"{cls.BASE_URL}/microphone-stream",
             content=json.dumps({"chunk": base64.b64encode(chunk).decode("utf-8")}),
             headers={"Content-Type": "application/json"},
         )
-        if response.status_code != 200:
-            raise Exception(
-                "Something wrong happened while sending mic data to compute server..."
-            )
+        r.raise_for_status()
 
-    @staticmethod
-    def send_camera_frames(frames: list[str]):
-        response = httpx.post(
-            ComputeServerRequests.SEND_CAMERA_FRAMES_ENDPOINT,
-            content=json.dumps({"frames": frames}),
+    @classmethod
+    def send_image(cls, frame_b64: str) -> None:
+        r = httpx.post(
+            f"{cls.BASE_URL}/camera-frames",
+            content=json.dumps({"frames": [frame_b64]}),
             headers={"Content-Type": "application/json"},
         )
-        if response.status_code != 200:
-            raise Exception(
-                "Something wrong happened while sending mic data to compute server..."
-            )
+        r.raise_for_status()
 
-async def populate_ai_stream_state_machine(
-    ai_stream: AsyncIterator[str],
-    p: pyaudio.PyAudio,
-    state_machine: dict[str, Any],
-    dependencies: dict[str, Any],
-):
-    ai_stream_response = json.loads(await ai_stream.__anext__())
+    @classmethod
+    def ai_stream(cls, *, async_http_client: httpx.AsyncClient):
+        return async_http_client.stream(
+            "POST", f"{API.BASE_URL}/ai-stream", timeout=httpx.Timeout(None)
+        )
 
-    state = ai_stream_response["type"]
-    task = None
 
-    match ai_stream_response["type"]:
-        case ComputeServerHandlers.KEEP_LISTENING_TYPE:
-            task = lambda: ComputeServerHandlers.handle_keep_listening(
-                p, dependencies
-            )
+async def populate_state(
+    ai_stream: AsyncIterator[str], client: AIStreamClient, state: State
+) -> State:
+    msg = json.loads(await ai_stream.__anext__())
+    state.type = StreamEventType(msg["type"])
+    tasks = AIStreamTasks(client=client)
 
-        case ComputeServerHandlers.STOP_LISTENING_TYPE:
-            task = lambda: ComputeServerHandlers.handle_stop_listening(dependencies)
+    match state.type:
+        case StreamEventType.KEEP_LISTENING:
+            state.task = tasks.keep_listening()
+        case StreamEventType.STOP_LISTENING:
+            state.task = tasks.stop_listening_and_send_image()
+        case StreamEventType.AI_SPEECH:
+            state.task = tasks.ai_speech(msg)
+        case _:
+            state.task = lambda: None
 
-        case ComputeServerHandlers.AI_SPEECH_TYPE:
-            task = lambda: ComputeServerHandlers.handle_ai_speech(ai_stream_response)
+    return state
 
-    state_machine["state"] = state
-    state_machine["task"] = task
-
-async def handle_ai_stream_state_machine(
-    state_machine: dict[str, Any],
-    dependencies: dict[str, Any]
-):
-    state = state_machine["state"]
-    task = state_machine["task"]
-    if state is None or task is None:
+async def handle_state(client: AIStreamClient, state: State) -> None:
+    if not state.type or not state.task:
         return
 
-    result = task()
+    result = state.task()
+    match state.type:
+        case StreamEventType.KEEP_LISTENING:
+            client.microphone_stream = result
+        case _:
+            pass
 
-    if state == ComputeServerHandlers.KEEP_LISTENING_TYPE:
-        dependencies["microphone_stream"] = result
+    state.type = None
+    state.task = None
 
-    state_machine["state"] = None
-    state_machine["task"] = None
 
 async def main():
-    p = pyaudio.PyAudio()
-    dependencies = {"microphone_stream": None}
-    state_machine = {"state": None, "task": None}
+    client = AIStreamClient()
+    state = State()
 
-    async with httpx.AsyncClient() as client:
-        async with client.stream(
-            "POST",
-            ComputeServerRequests.READ_AI_RESPONSE_ENDPOINT,
-            timeout=httpx.Timeout(None),
-        ) as ai_stream:
+    async with httpx.AsyncClient() as http_client:
+        async with API.ai_stream(async_http_client=http_client) as ai_stream:
             iterator = ai_stream.aiter_lines()
             while True:
-                await asyncio.gather(
-                    populate_ai_stream_state_machine(iterator, p, state_machine, dependencies),
-                    handle_ai_stream_state_machine(state_machine, dependencies),
+                state, _ = await asyncio.gather(
+                    populate_state(iterator, client, state),
+                    handle_state(client, state),
                 )
+
 
 if __name__ == "__main__":
     asyncio.run(main())
