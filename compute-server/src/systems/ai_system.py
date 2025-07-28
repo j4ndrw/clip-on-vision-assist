@@ -50,19 +50,17 @@ class AISystem:
     def get_audio_chunks_until_silent(
         self, *, audio_chunks: list[bytes], max_silence_threshold_ms=3000
     ) -> bytes | None:
-        if len(audio_chunks) == 0:
-            return None
-
         buf = b"".join(audio_chunks)
 
         segment = pydub.AudioSegment.from_raw(
             io.BytesIO(buf), sample_width=2, frame_rate=16000, channels=1
         )
 
+        silent_ending_index = pydub.silence.detect_leading_silence(segment)
         ranges = pydub.silence.detect_silence(segment, min_silence_len=2000)
         max_silence = -1
         for start, end in ranges:
-            if end - start > max_silence:
+            if start > silent_ending_index and end - start > max_silence:
                 max_silence = end - start
 
         if max_silence <= max_silence_threshold_ms:

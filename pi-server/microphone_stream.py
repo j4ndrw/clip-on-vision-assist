@@ -19,7 +19,8 @@ SAMPLE_RATE = 16000
 
 
 class StreamEventType(Enum):
-    KEEP_LISTENING = "keep-listening"
+    LISTEN = "listen"
+    TAKE_PICTURES_AND_LISTEN = "take-pictures-and-listen"
     STOP_LISTENING = "stop-listening"
     AI_SPEECH = "ai-speech"
     UNKNOWN = auto()
@@ -88,7 +89,7 @@ class AIStreamTasks:
     def __init__(self, *, client: AIStreamClient):
         self.client = client
 
-    def keep_listening(self):
+    def send_microphone_chunks(self):
         def task():
             self.client.start_mic()
             API.send_audio(self.client.read_audio_chunk())
@@ -96,10 +97,18 @@ class AIStreamTasks:
 
         return task
 
-    def stop_listening_and_send_image(self):
+    def take_pictures_and_listen(self):
+        def task():
+            self.client.start_mic()
+            API.send_audio(self.client.read_audio_chunk())
+            API.send_image(self.client.capture_image())
+            return self.client.microphone_stream
+
+        return task
+
+    def stop_listening(self):
         def task():
             self.client.stop_mic()
-            API.send_image(self.client.capture_image())
 
         return task
 
@@ -145,11 +154,14 @@ async def populate_state(
     state.type = StreamEventType(msg["type"])
     tasks = AIStreamTasks(client=client)
 
+    print(state.type)
     match state.type:
-        case StreamEventType.KEEP_LISTENING:
-            state.task = tasks.keep_listening()
+        case StreamEventType.LISTEN:
+            state.task = tasks.send_microphone_chunks()
+        case StreamEventType.TAKE_PICTURES_AND_LISTEN:
+            state.task = tasks.take_pictures_and_listen()
         case StreamEventType.STOP_LISTENING:
-            state.task = tasks.stop_listening_and_send_image()
+            state.task = tasks.stop_listening()
         case StreamEventType.AI_SPEECH:
             state.task = tasks.ai_speech(msg)
         case _:
@@ -163,7 +175,9 @@ async def handle_state(client: AIStreamClient, state: State) -> None:
 
     result = state.task()
     match state.type:
-        case StreamEventType.KEEP_LISTENING:
+        case StreamEventType.LISTEN:
+            client.microphone_stream = result
+        case StreamEventType.TAKE_PICTURES_AND_LISTEN:
             client.microphone_stream = result
         case _:
             pass

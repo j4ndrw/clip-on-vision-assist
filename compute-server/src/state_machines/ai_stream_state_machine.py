@@ -25,7 +25,8 @@ class AIStreamStateMachineConfig:
 
 
 class AIStreamStateMachine:
-    KEEP_LISTENING = as_line(json.dumps({"type": "keep-listening"}))
+    LISTEN = as_line(json.dumps({"type": "listen"}))
+    TAKE_PICTURES_AND_LISTEN = as_line(json.dumps({"type": "take-pictures-and-listen"}))
     STOP_LISTENING = as_line(json.dumps({"type": "stop-listening"}))
     AI_SPEECH = lambda chunk: as_line(
         json.dumps(
@@ -81,21 +82,27 @@ class AIStreamStateMachine:
             yield value
 
     def ready(self):
-        yield AIStreamStateMachine.KEEP_LISTENING
-
-        if self.system.wakeword_detected(chunks=microphone_chunks):
+        yield AIStreamStateMachine.LISTEN
+        if len(camera_frames) > 0 or (
+            len(camera_frames) == 0
+            and self.system.wakeword_detected(chunks=microphone_chunks)
+        ):
             microphone_chunks.clear()
             self.set_microphone_state("pending")
 
     def pending(self):
-        yield AIStreamStateMachine.KEEP_LISTENING
+        if len(camera_frames) == 0:
+            yield AIStreamStateMachine.TAKE_PICTURES_AND_LISTEN
+        else:
+            yield AIStreamStateMachine.LISTEN
 
-        if buf := self.system.get_audio_chunks_until_silent(
-            audio_chunks=microphone_chunks
-        ):
-            microphone_chunks.clear()
-            microphone_chunks.append(buf)
-            self.set_microphone_state("done")
+        if len(microphone_chunks) > 0 and len(camera_frames) > 0:
+            if buf := self.system.get_audio_chunks_until_silent(
+                audio_chunks=microphone_chunks
+            ):
+                microphone_chunks.clear()
+                microphone_chunks.append(buf)
+                self.set_microphone_state("done")
 
     def done(self):
         for speech in self.system.stream_ai_speech(
