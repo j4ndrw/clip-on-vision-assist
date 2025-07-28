@@ -146,10 +146,10 @@ async def handle_ai_stream_state_machine(
     if state is None or task is None:
         return
 
+    result = task()
+
     if state == ComputeServerHandlers.KEEP_LISTENING_TYPE:
-        dependencies["microphone_stream"] = task()
-    else:
-        task()
+        dependencies["microphone_stream"] = result
 
     state_machine["state"] = None
     state_machine["task"] = None

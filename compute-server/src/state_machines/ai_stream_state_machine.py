@@ -1,0 +1,114 @@
+import base64
+import json
+from dataclasses import dataclass, field
+from typing import Any, Callable, Generator
+
+from src.camera_frames.camera_frames import camera_frames
+from src.microphone_chunks.microphone_chunks import microphone_chunks
+from src.state.state import State, states
+from src.systems.ai_system import AISystem
+from src.utils.stream import as_line
+
+
+@dataclass
+class AIStreamStateMachineConfig:
+    ai_system: AISystem
+    idempotency_id_factory: Callable[[], str] = field(
+        default=lambda: microphone_chunks.mutation_id
+    )
+    microphone_state_factory: Callable[[], State] = field(
+        default=lambda: states["microphone"]
+    )
+    set_microphone_state: Callable[[State], None] = field(
+        default=lambda state: states.update({"microphone": state})
+    )
+
+
+class AIStreamStateMachine:
+    KEEP_LISTENING = as_line(json.dumps({"type": "keep-listening"}))
+    STOP_LISTENING = as_line(json.dumps({"type": "stop-listening"}))
+    AI_SPEECH = lambda chunk: as_line(
+        json.dumps(
+            {
+                "type": "ai-speech",
+                "sample_width": chunk.sample_width,
+                "frame_rate": chunk.sample_rate,
+                "channels": chunk.sample_channels,
+                "data": base64.b64encode(chunk.audio_int16_bytes).decode("utf-8"),
+            }
+        )
+    )
+
+    def __init__(self, *, config: AIStreamStateMachineConfig):
+        self.system = config.ai_system
+
+        self.microphone_state_factory = config.microphone_state_factory
+        self.set_microphone_state = config.set_microphone_state
+        self.idempotency_id_factory = config.idempotency_id_factory
+
+        self.stopped_listening_to_microphone = False
+        self.last_mutation_id = ""
+
+    def execute(self):
+        while True:
+            match self.microphone_state_factory():
+                case "ready":
+                    for event in self.with_idempotency_check(self.ready()):
+                        yield event
+
+                case "pending":
+                    for event in self.with_idempotency_check(self.pending()):
+                        yield event
+
+                case "done":
+                    if not self.stopped_listening_to_microphone:
+                        yield AIStreamStateMachine.STOP_LISTENING
+                        self.stopped_listening_to_microphone = True
+                    elif (
+                        len(microphone_chunks) > 0
+                        and len(camera_frames) > 0
+                    ):
+                        for event in self.done():
+                            yield event
+                        self.stopped_listening_to_microphone = False
+
+    def with_idempotency_check(self, generator: Generator[str, Any, None]):
+        if self.last_mutation_id == self.idempotency_id_factory():
+            return
+
+        self.last_mutation_id = self.idempotency_id_factory()
+        for value in generator:
+            yield value
+
+    def ready(self):
+        yield AIStreamStateMachine.KEEP_LISTENING
+
+        if self.system.wakeword_detected(chunks=microphone_chunks):
+            microphone_chunks.clear()
+            self.set_microphone_state("pending")
+
+    def pending(self):
+        yield AIStreamStateMachine.KEEP_LISTENING
+
+        if buf := self.system.get_audio_chunks_until_silent(
+            audio_chunks=microphone_chunks
+        ):
+            microphone_chunks.clear()
+            microphone_chunks.append(buf)
+            self.set_microphone_state("done")
+
+    def done(self):
+        for speech in self.system.stream_ai_speech(
+            microphone_chunks=microphone_chunks, camera_frames=camera_frames
+        ):
+            yield AIStreamStateMachine.AI_SPEECH(speech)
+
+        microphone_chunks.clear()
+        camera_frames.clear()
+        self.set_microphone_state("ready")
+
+
+def ai_stream_state_machine(*, config: AIStreamStateMachineConfig):
+    state_machine = AIStreamStateMachine(config=config)
+    for event in state_machine.execute():
+        yield event
