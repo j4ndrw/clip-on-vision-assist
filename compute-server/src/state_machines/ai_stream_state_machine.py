@@ -13,8 +13,11 @@ from src.utils.stream import as_line
 @dataclass
 class AIStreamStateMachineConfig:
     ai_system: AISystem
-    idempotency_id_factory: Callable[[], str] = field(
+    microphone_idempotency_id_factory: Callable[[], str] = field(
         default=lambda: microphone_chunks.mutation_id
+    )
+    camera_idempotency_id_factory: Callable[[], str] = field(
+        default=lambda: camera_frames.mutation_id
     )
     microphone_state_factory: Callable[[], State] = field(
         default=lambda: states["microphone"]
@@ -45,10 +48,13 @@ class AIStreamStateMachine:
 
         self.microphone_state_factory = config.microphone_state_factory
         self.set_microphone_state = config.set_microphone_state
-        self.idempotency_id_factory = config.idempotency_id_factory
+        self.microphone_idempotency_id_factory = config.microphone_idempotency_id_factory
+        self.camera_idempotency_id_factory = config.camera_idempotency_id_factory
 
         self.stopped_listening_to_microphone = False
-        self.last_mutation_id = ""
+
+        self.last_microphone_mutation_id = ""
+        self.last_camera_mutation_id = ""
 
     def execute(self):
         while True:
@@ -74,10 +80,15 @@ class AIStreamStateMachine:
                         self.stopped_listening_to_microphone = False
 
     def with_idempotency_check(self, generator: Generator[str, Any, None]):
-        if self.last_mutation_id == self.idempotency_id_factory():
+        if self.last_microphone_mutation_id == self.microphone_idempotency_id_factory():
             return
 
-        self.last_mutation_id = self.idempotency_id_factory()
+        if self.last_camera_mutation_id == self.camera_idempotency_id_factory():
+            return
+
+        self.last_microphone_mutation_id = self.microphone_idempotency_id_factory()
+        self.last_camera_mutation_id = self.camera_idempotency_id_factory()
+
         for value in generator:
             yield value
 
