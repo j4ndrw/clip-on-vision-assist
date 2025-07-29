@@ -44,6 +44,12 @@ def silence_detected(
 
     return ret
 
+
 def play_asset(name: str, *, volume_db: int = -3):
-    segment = pydub.AudioSegment.from_mp3(os.path.join(os.curdir, "assets", "sounds", f"{name}.mp3")) + volume_db
+    segment = (
+        pydub.AudioSegment.from_mp3(
+            os.path.join(os.curdir, "assets", "sounds", f"{name}.mp3")
+        )
+        + volume_db
+    )
     pydub.playback.play(segment)

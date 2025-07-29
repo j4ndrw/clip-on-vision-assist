@@ -2,7 +2,6 @@ import base64
 import io
 from typing import Any
 
-import pyaudio
 import pydub
 import pydub.playback
 

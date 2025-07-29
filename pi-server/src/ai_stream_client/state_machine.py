@@ -1,26 +1,17 @@
 import asyncio
 import json
-from dataclasses import dataclass, field
-from typing import AsyncIterator, Callable
 
 import httpx
 
 from src.ai_stream_client.api import API
 from src.ai_stream_client.client import AIStreamClient
 from src.ai_stream_client.event import StreamEventType
+from src.ai_stream_client.state import State
 from src.ai_stream_client.tasks import AIStreamTasks
 
 
-@dataclass
-class State:
-    type: StreamEventType | None = field(default=None)
-    task: Callable[[], None] | None = field(default=None)
-
-
-async def receive_event(
-    ai_stream: AsyncIterator[str], client: AIStreamClient, state: State
-) -> State:
-    msg = json.loads(await ai_stream.__anext__())
+async def receive_event(line: str, client: AIStreamClient, state: State) -> State:
+    msg = json.loads(line)
     state.type = StreamEventType(msg["type"])
     tasks = AIStreamTasks(client=client)
 
@@ -33,27 +24,28 @@ async def receive_event(
             state.task = tasks.stall()
         case StreamEventType.AI_SPEECH:
             state.task = tasks.ai_speech(msg)
+        case StreamEventType.DONE:
+            state.task = tasks.done()
 
     return state
 
 
-async def consume_event(state: State) -> None:
+async def consume_event(state: State):
     if not state.type or not state.task:
-        return
+        return False
 
     state.task()
 
 
 async def event_loop():
-    client = AIStreamClient()
-    state = State()
+    while True:
+        client = AIStreamClient()
+        state = State()
 
-    async with httpx.AsyncClient() as http_client:
-        async with API.ai_stream(async_http_client=http_client) as ai_stream:
-            iterator = ai_stream.aiter_lines()
-            while True:
-                print(state.type)
-                state, _ = await asyncio.gather(
-                    receive_event(iterator, client, state),
-                    consume_event(state),
-                )
+        async with httpx.AsyncClient() as http_client:
+            async with API.ai_stream(async_http_client=http_client) as ai_stream:
+                async for line in ai_stream.aiter_lines():
+                    state, _ = await asyncio.gather(
+                        receive_event(line, client, state),
+                        consume_event(state),
+                    )

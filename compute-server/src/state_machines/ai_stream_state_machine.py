@@ -21,11 +21,13 @@ class AIStreamStateMachineConfig:
     set_microphone_state: Callable[[State], None] = field(
         default=lambda state: states.update({"microphone": state})
     )
+    end: bool = field(default=False)
 
 
 class AIStreamStateMachineSideEffects:
     def __init__(self, *, config: AIStreamStateMachineConfig):
         self.config = config
+        self.end = False
 
     def wakeword_detection(self):
         if self.config.ai_system.wakeword_detected(chunks=microphone_chunks):
@@ -47,6 +49,7 @@ class AIStreamStateMachineEvent:
     CAPTURE_PROMPT: str = field(default=as_line(json.dumps({"type": "capture-prompt"})))
     STALL: str = field(default=as_line(json.dumps({"type": "stall"})))
     AI_SPEECH: Callable[[AudioChunk], str] = field(default=audio_chunk_as_line("ai-speech"))
+    DONE: str = field(default=as_line(json.dumps({"type": "done"})))
 
 class AIStreamStateMachineEventProducer:
     def __init__(self, *, config: AIStreamStateMachineConfig):
@@ -87,6 +90,11 @@ class AIStreamStateMachineEventProducer:
             self.stopped_listening_to_microphone = False
             self.requested_prompt = False
 
+    def done(self):
+        if len(microphone_chunks) > 0 and len(camera_frames) > 0:
+            self.config.end = True
+            yield AIStreamStateMachineEvent.DONE
+
 
 class AIStreamStateMachine:
     def __init__(self, *, config: AIStreamStateMachineConfig):
@@ -95,7 +103,7 @@ class AIStreamStateMachine:
         self.event_producer = AIStreamStateMachineEventProducer(config=config)
 
     def generator(self):
-        while True:
+        while not self.config.end:
             match self.config.microphone_state_factory():
                 case "ready":
                     for event in self.ready():
@@ -130,6 +138,8 @@ class AIStreamStateMachine:
             yield event
 
         self.side_effects.reset_state()
+        for event in self.event_producer.done():
+            yield event
 
 def ai_stream_state_machine(*, config: AIStreamStateMachineConfig):
     state_machine = AIStreamStateMachine(config=config).generator()

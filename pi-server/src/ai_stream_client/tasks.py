@@ -2,7 +2,11 @@ import time
 from typing import Any
 
 from src.ai_stream_client.api import API
-from src.ai_stream_client.assets import PROMPT_CAPTURED, READY_TO_LISTEN, WAKEWORD_DETECTED
+from src.ai_stream_client.assets import (
+    PROMPT_CAPTURED,
+    READY_TO_LISTEN,
+    WAKEWORD_DETECTED,
+)
 from src.ai_stream_client.client import AIStreamClient
 from src.utils.audio import play_asset, silence_detected
 from src.utils.data import as_base64
@@ -19,7 +23,11 @@ class AIStreamTasks:
                 play_asset(READY_TO_LISTEN, volume_db=-12)
                 time.sleep(0.2)
 
-            audio_chunk = self.client.io.capture_audio_chunk().consume().ret
+            audio_chunk = b"".join(
+                self.client.io.capture_audio_until(lambda chunks: len(chunks) > 1)
+                .consume()
+                .ret
+            )
             API.send_microphone_audio(as_base64(audio_chunk))
 
         return task
@@ -55,5 +63,11 @@ class AIStreamTasks:
     def ai_speech(self, msg: Any):
         def task():
             self.client.play_audio_chunk_from_response(msg)
+
+        return task
+
+    def done(self):
+        def task():
+            return
 
         return task

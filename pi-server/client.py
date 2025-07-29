@@ -1,7 +1,5 @@
 import asyncio
 
-import pyaudio
-
 from src.ai_stream_client.state_machine import event_loop
 
 

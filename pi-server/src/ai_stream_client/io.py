@@ -6,7 +6,12 @@ from typing import Callable
 import cv2
 import pyaudio
 
-from src.ai_stream_client.constants import CHANNELS, CHUNK_SIZE, SAMPLE_FORMAT, SAMPLE_RATE
+from src.ai_stream_client.constants import (
+    CHANNELS,
+    CHUNK_SIZE,
+    SAMPLE_FORMAT,
+    SAMPLE_RATE,
+)
 from src.utils.generator import StatefulGenerator
 
 
@@ -84,13 +89,13 @@ class AIStreamIO:
 
         return StatefulGenerator(gen())
 
-    def capture_video(self, *, n=3, fps=1, factor=3):
+    def capture_video(self, *, n=2, fps=1, factor=2):
         def gen():
             camera = cv2.VideoCapture(0)
             camera_frames: list[str] = []
-            time.sleep(0.1)  # Give the camera a bit of time to power on
 
             def worker(camera_frames: list[str]):
+                time.sleep(0.1)  # Give the camera a bit of time to power on
                 for _ in range(n // fps):
                     for _ in range(fps):
                         ret, frame = camera.read()
