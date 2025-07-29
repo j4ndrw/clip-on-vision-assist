@@ -8,11 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from src.camera_frames.camera_frames import camera_frames
-from src.state_machines.ai_stream_state_machine import (
-    AIStreamStateMachine,
-    AIStreamStateMachineConfig,
-    ai_stream_state_machine,
-)
 from src.llm.client import llm_client
 from src.llm.endpoints import OLLAMA_ENDPOINT
 from src.llm.history import chat_history
@@ -20,6 +15,8 @@ from src.microphone_chunks.microphone_chunks import microphone_chunks
 from src.requests.microphone_stream import MicrophoneStreamRequest
 from src.requests.post_camera_frames import PostCameraFramesRequest
 from src.speech.client import speech_client
+from src.state_machines.ai_stream_state_machine import (
+    AIStreamStateMachineConfig, ai_stream_state_machine)
 from src.systems.ai_system import AISystem
 
 app = FastAPI()
@@ -42,7 +39,7 @@ stt_model = vosk.Model(lang="en-us")
 @app.post("/api/camera-frames")
 async def post_camera_frames(request: PostCameraFramesRequest):
     camera_frames.clear()
-    camera_frames.extend(request.frames)
+    camera_frames.add_many(request.frames)
     return Response(status_code=200)
 
 

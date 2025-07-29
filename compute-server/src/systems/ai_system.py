@@ -7,6 +7,7 @@ import pydub
 import pydub.silence
 import vosk
 from openai.types.shared.chat_model import ChatModel
+
 from src.llm.client import LLMClient
 from src.llm.history import ChatHistory
 from src.llm.prompts import SYSTEM_PROMPT
@@ -60,7 +61,7 @@ class AISystem:
         ranges = pydub.silence.detect_silence(segment, min_silence_len=2000)
         max_silence = -1
         for start, end in ranges:
-            if start > silent_ending_index and end - start > max_silence:
+            if start >= silent_ending_index and end - start > max_silence:
                 max_silence = end - start
 
         if max_silence <= max_silence_threshold_ms:

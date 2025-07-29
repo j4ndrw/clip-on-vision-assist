@@ -1,7 +1,10 @@
+import signal
+import multiprocessing
 import asyncio
 import base64
 import io
 import json
+import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, AsyncIterator, Callable
@@ -16,11 +19,19 @@ CHUNK_SIZE = 1024
 SAMPLE_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 SAMPLE_RATE = 16000
+SECONDS = 1
+
+def signal_handler(*args, **kwargs):
+    print("Main process received termination signal. Exiting...")
+    for p in multiprocessing.active_children():
+        print(f"Killing worker process {p.pid}")
+        p.kill()
+    exit(0)
 
 
 class StreamEventType(Enum):
     LISTEN = "listen"
-    TAKE_PICTURES_AND_LISTEN = "take-pictures-and-listen"
+    TAKE_PICTURES = "take-pictures"
     STOP_LISTENING = "stop-listening"
     AI_SPEECH = "ai-speech"
     UNKNOWN = auto()
@@ -32,47 +43,60 @@ class State:
     task: Callable[[], Any] | None = field(default=None)
 
 
-class AIStreamClient:
+class AudioCapturing:
     def __init__(self):
         self.p = pyaudio.PyAudio()
-        self.microphone_stream: pyaudio.Stream | None = None
-
-    def start_mic(self) -> None:
-        if self.microphone_stream is None:
-            self.microphone_stream = self.p.open(
-                format=SAMPLE_FORMAT,
-                channels=CHANNELS,
-                rate=SAMPLE_RATE,
-                frames_per_buffer=CHUNK_SIZE,
-                input=True,
-            )
-        if self.microphone_stream.is_stopped():
-            self.microphone_stream.start_stream()
-
-    def stop_mic(self) -> None:
-        if self.microphone_stream and not self.microphone_stream.is_stopped():
-            self.microphone_stream.stop_stream()
-
-    def read_audio_chunk(self) -> bytes:
-        assert (
-            self.microphone_stream is not None
-        ), "Cannot read from the microphone stream - it was not instantiated."
-
-        return b"".join(
-            self.microphone_stream.read(CHUNK_SIZE)
-            for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE))
+        self.stream: pyaudio.Stream = self.p.open(
+            format=SAMPLE_FORMAT,
+            channels=CHANNELS,
+            rate=SAMPLE_RATE,
+            frames_per_buffer=CHUNK_SIZE,
+            input=True,
         )
 
-    def capture_image(self) -> str:
-        camera = cv2.VideoCapture(0)
-        ret, frame = camera.read()
-        camera.release()
+    def read_audio_chunk(self):
+        if self.stream.is_stopped():
+            self.stream.start_stream()
 
-        if not ret:
-            raise RuntimeError("Camera capture failed.")
+        return base64.b64encode(
+            b"".join(
+                self.stream.read(CHUNK_SIZE)
+                for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE * SECONDS))
+            )
+        ).decode("utf-8")
 
-        img_bytes = cv2.imencode(".png", frame)[1].tobytes()
-        return base64.b64encode(img_bytes).decode("utf-8")
+
+class VideoCapturing:
+    def __init__(self):
+        self.camera: cv2.VideoCapture | None = None
+
+    def capture_video(self, *, n=3, fps=1):
+        if self.camera is None:
+            self.camera = cv2.VideoCapture(0)
+            if not self.camera.isOpened():
+                raise RuntimeError("Camera could not be opened.")
+
+        frames: list[str] = []
+        for _ in range(n // fps):
+            for _ in range(fps):
+                ret, frame = self.camera.read()
+                if not ret:
+                    raise RuntimeError("Camera capture failed.")
+
+                img_bytes = cv2.imencode(".png", frame)[1].tobytes()
+                frames.append(base64.b64encode(img_bytes).decode("utf-8"))
+
+            time.sleep(1 / fps)
+
+        self.camera.release()
+        self.camera = None
+        return frames
+
+
+class AIStreamClient:
+    def __init__(self):
+        self.audio_capturing = AudioCapturing()
+        self.video_capturing = VideoCapturing()
 
     def play_audio_chunk_from_response(self, r: dict[str, Any]) -> None:
         chunk = base64.b64decode(r["data"])
@@ -88,27 +112,47 @@ class AIStreamClient:
 class AIStreamTasks:
     def __init__(self, *, client: AIStreamClient):
         self.client = client
+        self.audio_capturing_process: multiprocessing.Process | None = None
+        self.video_capturing_process: multiprocessing.Process | None = None
 
     def send_microphone_chunks(self):
         def task():
-            self.client.start_mic()
-            API.send_audio(self.client.read_audio_chunk())
-            return self.client.microphone_stream
+            API.send_audio(self.client.audio_capturing.read_audio_chunk())
 
         return task
 
-    def take_pictures_and_listen(self):
+    def take_pictures(self):
+        def send_audio():
+            API.send_audio(self.client.audio_capturing.read_audio_chunk())
+
+        def send_images():
+            API.send_images(self.client.video_capturing.capture_video())
+
         def task():
-            self.client.start_mic()
-            API.send_audio(self.client.read_audio_chunk())
-            API.send_image(self.client.capture_image())
-            return self.client.microphone_stream
+            if self.audio_capturing_process is None:
+                self.audio_capturing_process = multiprocessing.Process(
+                    target=send_audio
+                )
+                self.audio_capturing_process.start()
+
+            if self.video_capturing_process is None:
+                self.video_capturing_process = multiprocessing.Process(
+                    target=send_images
+                )
+                self.video_capturing_process.start()
 
         return task
 
     def stop_listening(self):
         def task():
-            self.client.stop_mic()
+            if not self.client.audio_capturing.stream.is_stopped():
+                self.client.audio_capturing.stream.stop_stream()
+            if self.client.video_capturing.camera is not None:
+                self.client.video_capturing.camera.release()
+                self.client.video_capturing.camera = None
+
+            self.audio_capturing_process = None
+            self.video_capturing_process = None
 
         return task
 
@@ -123,19 +167,19 @@ class API:
     BASE_URL = "http://localhost:8000/api"
 
     @classmethod
-    def send_audio(cls, chunk: bytes) -> None:
+    def send_audio(cls, chunk: str) -> None:
         r = httpx.post(
             f"{cls.BASE_URL}/microphone-stream",
-            content=json.dumps({"chunk": base64.b64encode(chunk).decode("utf-8")}),
+            content=json.dumps({"chunk": chunk}),
             headers={"Content-Type": "application/json"},
         )
         r.raise_for_status()
 
     @classmethod
-    def send_image(cls, frame_b64: str) -> None:
+    def send_images(cls, frames_b64: list[str]) -> None:
         r = httpx.post(
             f"{cls.BASE_URL}/camera-frames",
-            content=json.dumps({"frames": [frame_b64]}),
+            content=json.dumps({"frames": frames_b64}),
             headers={"Content-Type": "application/json"},
         )
         r.raise_for_status()
@@ -147,19 +191,18 @@ class API:
         )
 
 
-async def populate_state(
+async def receive_event(
     ai_stream: AsyncIterator[str], client: AIStreamClient, state: State
 ) -> State:
     msg = json.loads(await ai_stream.__anext__())
     state.type = StreamEventType(msg["type"])
     tasks = AIStreamTasks(client=client)
 
-    print(state.type)
     match state.type:
         case StreamEventType.LISTEN:
             state.task = tasks.send_microphone_chunks()
-        case StreamEventType.TAKE_PICTURES_AND_LISTEN:
-            state.task = tasks.take_pictures_and_listen()
+        case StreamEventType.TAKE_PICTURES:
+            state.task = tasks.take_pictures()
         case StreamEventType.STOP_LISTENING:
             state.task = tasks.stop_listening()
         case StreamEventType.AI_SPEECH:
@@ -169,21 +212,12 @@ async def populate_state(
 
     return state
 
-async def handle_state(client: AIStreamClient, state: State) -> None:
+
+async def consume_event(state: State) -> None:
     if not state.type or not state.task:
         return
 
-    result = state.task()
-    match state.type:
-        case StreamEventType.LISTEN:
-            client.microphone_stream = result
-        case StreamEventType.TAKE_PICTURES_AND_LISTEN:
-            client.microphone_stream = result
-        case _:
-            pass
-
-    state.type = None
-    state.task = None
+    state.task()
 
 
 async def main():
@@ -195,10 +229,16 @@ async def main():
             iterator = ai_stream.aiter_lines()
             while True:
                 state, _ = await asyncio.gather(
-                    populate_state(iterator, client, state),
-                    handle_state(client, state),
+                    receive_event(iterator, client, state),
+                    consume_event(state),
                 )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt as e:
+        signal_handler()
+        raise e
