@@ -1,4 +1,3 @@
-import base64
 import json
 from dataclasses import dataclass, field
 from typing import Callable
@@ -8,8 +7,7 @@ from src.camera_frames.camera_frames import camera_frames
 from src.microphone_chunks.microphone_chunks import microphone_chunks
 from src.state.state import State, states
 from src.systems.ai_system import AISystem
-from src.utils.stream import as_line
-
+from src.utils.stream import as_line, audio_chunk_as_line
 
 @dataclass
 class AIStreamStateMachineConfig:
@@ -30,10 +28,7 @@ class AIStreamStateMachineSideEffects:
         self.config = config
 
     def wakeword_detection(self):
-        if len(camera_frames) > 0 or (
-            len(camera_frames) == 0
-            and self.config.ai_system.wakeword_detected(chunks=microphone_chunks)
-        ):
+        if self.config.ai_system.wakeword_detected(chunks=microphone_chunks):
             microphone_chunks.clear()
             self.config.set_microphone_state("pending")
 
@@ -51,22 +46,13 @@ class AIStreamStateMachineSideEffects:
         camera_frames.clear()
         self.config.set_microphone_state("ready")
 
+
 @dataclass
 class AIStreamStateMachineEvent:
     LISTEN: str = field(default=as_line(json.dumps({"type": "listen"})))
     TAKE_PICTURES: str = field(default=as_line(json.dumps({"type": "take-pictures"})))
     STOP_LISTENING: str = field(default=as_line(json.dumps({"type": "stop-listening"})))
-    AI_SPEECH: Callable[[AudioChunk], str] = field(default=lambda chunk: as_line(
-        json.dumps(
-            {
-                "type": "ai-speech",
-                "sample_width": chunk.sample_width,
-                "frame_rate": chunk.sample_rate,
-                "channels": chunk.sample_channels,
-                "data": base64.b64encode(chunk.audio_int16_bytes).decode("utf-8"),
-            }
-        )
-    ))
+    AI_SPEECH: Callable[[AudioChunk], str] = field(default=audio_chunk_as_line("ai-speech"))
 
 class AIStreamStateMachineEventProducer:
     def __init__(self, *, config: AIStreamStateMachineConfig):
@@ -107,13 +93,14 @@ class AIStreamStateMachineEventProducer:
             self.stopped_listening_to_microphone = False
             self.requested_pictures = False
 
+
 class AIStreamStateMachine:
     def __init__(self, *, config: AIStreamStateMachineConfig):
         self.config = config
         self.side_effects = AIStreamStateMachineSideEffects(config=config)
         self.event_producer = AIStreamStateMachineEventProducer(config=config)
 
-    def execute(self):
+    def generator(self):
         while True:
             match self.config.microphone_state_factory():
                 case "ready":
@@ -155,6 +142,6 @@ class AIStreamStateMachine:
 
 
 def ai_stream_state_machine(*, config: AIStreamStateMachineConfig):
-    state_machine = AIStreamStateMachine(config=config)
-    for event in state_machine.execute():
+    state_machine = AIStreamStateMachine(config=config).generator()
+    for event in state_machine:
         yield event

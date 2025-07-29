@@ -21,6 +21,9 @@ class SpeechClient:
     def get(self) -> piper.PiperVoice:
         return self._client
 
+    def synthesize(self, *, text: str):
+        return self._client.synthesize(text, self._synthesis_config)
+
     def stream(self, *, text_stream: Generator[str, Any, Any]):
         chunks_to_synthesize: str = ""
 
@@ -42,9 +45,7 @@ class SpeechClient:
                 processed_chunks += 1
 
         if len(chunks_to_synthesize) > 0:
-            for speech_chunk in self._client.synthesize(
-                chunks_to_synthesize, self._synthesis_config
-            ):
+            for speech_chunk in self.synthesize(text=chunks_to_synthesize):
                 yield speech_chunk
 
 

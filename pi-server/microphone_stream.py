@@ -19,7 +19,6 @@ CHUNK_SIZE = 1024
 SAMPLE_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 SAMPLE_RATE = 16000
-SECONDS = 1
 
 def signal_handler(*args, **kwargs):
     print("Main process received termination signal. Exiting...")
@@ -54,17 +53,20 @@ class AudioCapturing:
             input=True,
         )
 
-    def read_audio_chunk(self):
+    def read_audio_chunk(self, *, seconds=1):
+        return self.as_base64(self.read_audio_chunk_raw(seconds=seconds))
+
+    def read_audio_chunk_raw(self, *, seconds=1):
         if self.stream.is_stopped():
             self.stream.start_stream()
 
-        return base64.b64encode(
-            b"".join(
+        return b"".join(
                 self.stream.read(CHUNK_SIZE)
-                for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE * SECONDS))
+                for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE * seconds))
             )
-        ).decode("utf-8")
 
+    def as_base64(self, chunk: bytes) -> str:
+        return base64.b64encode(chunk).decode("utf-8")
 
 class VideoCapturing:
     def __init__(self):
@@ -113,7 +115,7 @@ class AIStreamTasks:
     def __init__(self, *, client: AIStreamClient):
         self.client = client
         self.audio_capturing_process: multiprocessing.Process | None = None
-        self.video_capturing_process: multiprocessing.Process | None = None
+        self.data_sending_process: multiprocessing.Process | None = None
 
     def send_microphone_chunks(self):
         def task():
@@ -122,24 +124,29 @@ class AIStreamTasks:
         return task
 
     def take_pictures(self):
-        def send_audio():
-            API.send_audio(self.client.audio_capturing.read_audio_chunk())
+        audio_buf = b""
 
-        def send_images():
+        def capture_audio(audio_buf: bytes):
+            audio_buf += self.client.audio_capturing.read_audio_chunk_raw()
+
+        def send_data(audio_buf: bytes):
             API.send_images(self.client.video_capturing.capture_video())
+            API.send_audio(self.client.audio_capturing.as_base64(audio_buf))
 
         def task():
             if self.audio_capturing_process is None:
                 self.audio_capturing_process = multiprocessing.Process(
-                    target=send_audio
+                    target=capture_audio,
+                    args=(audio_buf,)
                 )
                 self.audio_capturing_process.start()
 
-            if self.video_capturing_process is None:
-                self.video_capturing_process = multiprocessing.Process(
-                    target=send_images
+            if self.data_sending_process is None:
+                self.data_sending_process = multiprocessing.Process(
+                    target=send_data,
+                    args=(audio_buf,)
                 )
-                self.video_capturing_process.start()
+                self.data_sending_process.start()
 
         return task
 
@@ -152,7 +159,7 @@ class AIStreamTasks:
                 self.client.video_capturing.camera = None
 
             self.audio_capturing_process = None
-            self.video_capturing_process = None
+            self.data_sending_process = None
 
         return task
 
@@ -189,7 +196,6 @@ class API:
         return async_http_client.stream(
             "POST", f"{API.BASE_URL}/ai-stream", timeout=httpx.Timeout(None)
         )
-
 
 async def receive_event(
     ai_stream: AsyncIterator[str], client: AIStreamClient, state: State
@@ -228,6 +234,7 @@ async def main():
         async with API.ai_stream(async_http_client=http_client) as ai_stream:
             iterator = ai_stream.aiter_lines()
             while True:
+                print(state.type)
                 state, _ = await asyncio.gather(
                     receive_event(iterator, client, state),
                     consume_event(state),
