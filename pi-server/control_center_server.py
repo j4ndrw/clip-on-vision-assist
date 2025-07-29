@@ -11,6 +11,6 @@ app.add_middleware(
 )
 
 
-@app.post("/api/control-center")
-async def control_center():
+@app.post("/api/control-center/under-construction")
+async def under_construction():
     return "Under construction"

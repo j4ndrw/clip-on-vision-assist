@@ -79,6 +79,7 @@ class AISystem:
             buf += chunk
         rec.AcceptWaveform(buf)
         prompt = json.loads(rec.FinalResult())["text"]
+        print(f"PROMPT: {prompt}")
 
         llm_text_stream = self.llm_client.stream(
             model=self.llm,

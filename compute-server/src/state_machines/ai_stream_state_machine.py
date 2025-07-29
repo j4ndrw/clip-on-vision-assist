@@ -32,26 +32,20 @@ class AIStreamStateMachineSideEffects:
             microphone_chunks.clear()
             self.config.set_microphone_state("pending")
 
-    def listen_until_silent(self):
+    def listen(self):
         if len(microphone_chunks) > 0 and len(camera_frames) > 0:
-            if buf := self.config.ai_system.get_audio_chunks_until_silent(
-                audio_chunks=microphone_chunks
-            ):
-                microphone_chunks.clear()
-                microphone_chunks.append(buf)
-                self.config.set_microphone_state("done")
+            self.config.set_microphone_state("done")
 
     def reset_state(self):
         microphone_chunks.clear()
         camera_frames.clear()
         self.config.set_microphone_state("ready")
 
-
 @dataclass
 class AIStreamStateMachineEvent:
-    LISTEN: str = field(default=as_line(json.dumps({"type": "listen"})))
-    TAKE_PICTURES: str = field(default=as_line(json.dumps({"type": "take-pictures"})))
-    STOP_LISTENING: str = field(default=as_line(json.dumps({"type": "stop-listening"})))
+    CAPTURE_WAKEWORD: str = field(default=as_line(json.dumps({"type": "capture-wakeword"})))
+    CAPTURE_PROMPT: str = field(default=as_line(json.dumps({"type": "capture-prompt"})))
+    STALL: str = field(default=as_line(json.dumps({"type": "stall"})))
     AI_SPEECH: Callable[[AudioChunk], str] = field(default=audio_chunk_as_line("ai-speech"))
 
 class AIStreamStateMachineEventProducer:
@@ -59,11 +53,11 @@ class AIStreamStateMachineEventProducer:
         self.config = config
 
         self.stopped_listening_to_microphone = False
-        self.requested_pictures = False
+        self.requested_prompt = False
 
         self.last_microphone_mutation_id = ""
 
-    def listen(self):
+    def capture_wakeword(self):
         if (
             self.last_microphone_mutation_id
             != self.config.microphone_idempotency_id_factory()
@@ -71,16 +65,16 @@ class AIStreamStateMachineEventProducer:
             self.last_microphone_mutation_id = (
                 self.config.microphone_idempotency_id_factory()
             )
-            yield AIStreamStateMachineEvent.LISTEN
+            yield AIStreamStateMachineEvent.CAPTURE_WAKEWORD
 
-    def take_pictures(self):
-        if not self.requested_pictures:
-            self.requested_pictures = True
-            yield AIStreamStateMachineEvent.TAKE_PICTURES
+    def capture_prompt(self):
+        if not self.requested_prompt:
+            self.requested_prompt = True
+            yield AIStreamStateMachineEvent.CAPTURE_PROMPT
 
-    def stop_listening(self):
+    def stall(self):
         if not self.stopped_listening_to_microphone:
-            yield AIStreamStateMachineEvent.STOP_LISTENING
+            yield AIStreamStateMachineEvent.STALL
             self.stopped_listening_to_microphone = True
 
     def ai_speech(self):
@@ -91,7 +85,7 @@ class AIStreamStateMachineEventProducer:
                 yield AIStreamStateMachineEvent.AI_SPEECH(speech)
 
             self.stopped_listening_to_microphone = False
-            self.requested_pictures = False
+            self.requested_prompt = False
 
 
 class AIStreamStateMachine:
@@ -116,30 +110,26 @@ class AIStreamStateMachine:
                         yield event
 
     def ready(self):
-        for event in self.event_producer.listen():
+        for event in self.event_producer.capture_wakeword():
             yield event
 
         self.side_effects.wakeword_detection()
 
     def pending(self):
         if len(camera_frames) == 0:
-            for event in self.event_producer.take_pictures():
+            for event in self.event_producer.capture_prompt():
                 yield event
 
-        for event in self.event_producer.listen():
-            yield event
-
-        self.side_effects.listen_until_silent()
+        self.side_effects.listen()
 
     def done(self):
-        for event in self.event_producer.stop_listening():
+        for event in self.event_producer.stall():
             yield event
 
         for event in self.event_producer.ai_speech():
             yield event
 
         self.side_effects.reset_state()
-
 
 def ai_stream_state_machine(*, config: AIStreamStateMachineConfig):
     state_machine = AIStreamStateMachine(config=config).generator()
