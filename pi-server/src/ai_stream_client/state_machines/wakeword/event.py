@@ -1,7 +1,7 @@
 from enum import Enum, auto
 
 
-class StreamEventType(Enum):
+class WakewordBasedStreamEventType(Enum):
     CAPTURE_WAKEWORD = "capture-wakeword"
     CAPTURE_PROMPT = "capture-prompt"
     STALL = "stall"

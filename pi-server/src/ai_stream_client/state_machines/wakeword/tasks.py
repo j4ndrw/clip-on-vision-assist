@@ -12,7 +12,7 @@ from src.utils.audio import play_asset, silence_detected
 from src.utils.data import as_base64
 
 
-class AIStreamTasks:
+class WakewordBasedStateMachineTasks:
     def __init__(self, *, client: AIStreamClient):
         self.client = client
 
