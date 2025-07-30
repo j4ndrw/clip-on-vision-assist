@@ -10,6 +10,7 @@ opencv-python = "*"
 pydub = "*"
 pyaudio = "*"
 httpx = "*"
+flask = "*"
 
 [dev-packages]
 black = "*"
