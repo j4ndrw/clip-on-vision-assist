@@ -11,6 +11,7 @@ pydub = "*"
 pyaudio = "*"
 httpx = "*"
 flask = "*"
+numpy = "*"
 
 [dev-packages]
 black = "*"
