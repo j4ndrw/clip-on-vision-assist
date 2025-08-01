@@ -38,13 +38,15 @@ class WakewordBasedStateMachineTasks:
             self.client.io.restart_audio_stream()
 
             audio_buf = b""
+            video_buf: list[str] = []
 
             video_stream = self.client.io.capture_video()
-            for _ in video_stream:
+            for frame in video_stream:
                 audio_chunk = self.client.io.capture_audio_chunk().consume().ret
                 audio_buf += audio_chunk
+                video_buf.append(frame)
 
-            API.send_camera_frames(video_stream.ret)
+            API.send_camera_frames(video_buf)
 
             audio_buf += b"".join(
                 self.client.io.capture_audio_until(silence_detected()).consume().ret

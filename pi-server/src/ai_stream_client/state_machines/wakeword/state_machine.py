@@ -5,16 +5,15 @@ from src.ai_stream_client.state_machines.wakeword.tasks import WakewordBasedStat
 def wakeword_based_state_machine(config: StateMachineConfig[WakewordBasedStreamEventType]):
     config.state.type = WakewordBasedStreamEventType(config.msg["type"])
     tasks = WakewordBasedStateMachineTasks(client=config.client)
-    match config.state.type:
-        case WakewordBasedStreamEventType.CAPTURE_WAKEWORD:
-            config.state.task = tasks.capture_wakeword()
-        case WakewordBasedStreamEventType.CAPTURE_PROMPT:
-            config.state.task = tasks.capture_prompt()
-        case WakewordBasedStreamEventType.STALL:
-            config.state.task = tasks.stall()
-        case WakewordBasedStreamEventType.AI_SPEECH:
-            config.state.task = tasks.ai_speech(config.msg)
-        case WakewordBasedStreamEventType.DONE:
-            config.state.task = tasks.done()
+    switch = {
+        WakewordBasedStreamEventType.CAPTURE_WAKEWORD: lambda: tasks.capture_wakeword(),
+        WakewordBasedStreamEventType.CAPTURE_PROMPT: lambda: tasks.capture_prompt(),
+        WakewordBasedStreamEventType.STALL: lambda: tasks.stall(),
+        WakewordBasedStreamEventType.AI_SPEECH: lambda: tasks.ai_speech(config.msg),
+        WakewordBasedStreamEventType.DONE: lambda: tasks.done(),
+    }
 
+    task_factory = switch.get(config.state.type)
+    if task_factory is not None:
+        config.state.task = task_factory()
     return config.state

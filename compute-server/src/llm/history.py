@@ -13,7 +13,7 @@ class ChatHistory(list):
                 content.append(
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{image}"},
+                        "image_url": {"url": f"data:image/jpeg;base64,{image}"},
                     }
                 )
         self.append({"role": "user", "content": content})

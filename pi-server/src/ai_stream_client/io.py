@@ -1,9 +1,9 @@
 import base64
 import threading
 import time
-from typing import Callable
+from typing import Callable, Optional
 
-import cv2
+import v4l2py
 import pyaudio
 
 from src.ai_stream_client.constants import (
@@ -17,7 +17,7 @@ from src.utils.generator import StatefulGenerator
 
 class AIStreamIO:
     def __init__(self):
-        self.microphone_stream: pyaudio.Stream | None = None
+        self.microphone_stream: Optional[pyaudio.Stream] = None
 
     def open_audio_stream(self):
         self.microphone_stream = pyaudio.PyAudio().open(
@@ -91,32 +91,26 @@ class AIStreamIO:
 
     def capture_video(self, *, n=2, fps=1, factor=2):
         def gen():
-            camera = cv2.VideoCapture(0)
-            camera_frames: list[str] = []
+            with v4l2py.Device.from_id(0) as camera:
+                capture = v4l2py.VideoCapture(camera)
+                capture.set_format(640, 480, "MJPG")
 
-            def worker(camera_frames: list[str]):
-                time.sleep(0.1)  # Give the camera a bit of time to power on
-                for _ in range(n // fps):
-                    for _ in range(fps):
-                        ret, frame = camera.read()
-                        if not ret:
-                            raise RuntimeError("Camera capture failed.")
+                frames = 0
+                frames_in_batch = 0
+                batch_size = n // fps
+                for frame in camera:
+                    yield base64.b64encode(frame.data).decode("utf-8")
+                    frames += 1
 
-                        img_bytes = cv2.imencode(".png", frame)[1].tobytes()
-                        camera_frames.append(
-                            base64.b64encode(img_bytes).decode("utf-8")
-                        )
+                    if frames >= n:
+                        break
 
-                    time.sleep(factor / fps)
+                    if frames_in_batch + 1 >= batch_size:
+                        time.sleep(factor / fps)
 
-            t = threading.Thread(target=worker, args=(camera_frames,))
-            t.daemon = True
-            t.start()
+                    frames_in_batch += 1
+                    frames_in_batch %= batch_size
 
-            while len(camera_frames) < n:
-                yield
-
-            camera.release()
-            return camera_frames
+                camera.close()
 
         return StatefulGenerator(gen())
