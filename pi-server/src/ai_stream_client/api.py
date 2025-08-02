@@ -13,6 +13,7 @@ class API:
             f"{cls.BASE_URL}/microphone-stream",
             content=json.dumps({"chunk": chunk}),
             headers={"Content-Type": "application/json"},
+            timeout=httpx.Timeout(None)
         )
         r.raise_for_status()
 
@@ -22,6 +23,7 @@ class API:
             f"{cls.BASE_URL}/camera-frames",
             content=json.dumps({"frames": frames_b64}),
             headers={"Content-Type": "application/json"},
+            timeout=httpx.Timeout(None)
         )
         r.raise_for_status()
 

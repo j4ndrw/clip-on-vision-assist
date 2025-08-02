@@ -26,7 +26,7 @@ async def receive_event(
 
 async def consume_event(state: State):
     if not state.type or not state.task:
-        return False
+        return
 
     state.task()
 
@@ -37,10 +37,15 @@ async def event_loop():
         state = State()
         state_machine = currently_active_state_machine["machine"]
 
-        async with httpx.AsyncClient() as http_client:
-            async with API.ai_stream(async_http_client=http_client) as ai_stream:
-                async for line in ai_stream.aiter_lines():
-                    state, _ = await asyncio.gather(
-                        receive_event(line, client, state, state_machine),
-                        consume_event(state),
-                    )
+        while True:
+            try:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as http_client:
+                    async with API.ai_stream(async_http_client=http_client) as ai_stream:
+                        async for line in ai_stream.aiter_lines():
+                            state, _ = await asyncio.gather(
+                                receive_event(line, client, state, state_machine),
+                                consume_event(state),
+                            )
+                break
+            except httpx.ConnectError:
+                await asyncio.sleep(1)
