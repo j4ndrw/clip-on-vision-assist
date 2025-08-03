@@ -2,10 +2,15 @@
 
 set -xe
 
+DEST_DIR="$HOME/projects/clip-on-vision-assist-client"
+
 function first_time_exports()
 {
     echo 'export FIRST_TIME_EXPORT="done"' >> ~/.bashrc
     echo 'export FIRST_TIME_EXPORT="done"' >> ~/.profile
+
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
     source ~/.bashrc
 }
 
@@ -57,10 +62,18 @@ function install_vision_dependencies()
         libdrm-dev
 }
 
+function install_networking_dependencies()
+{
+    sudo apt-get install -y \
+        hostapd \
+        dnsmasq
+}
 
-if [ -z "${FIRST_TIME_EXPORT}" ]; then
+if ! cat $HOME/.profile | grep "FIRST_TIME_EXPORT"; then
     first_time_exports
     install_general_dependencies
     install_audio_dependencies
     install_vision_dependencies
+    install_networking_dependencies
+    $DEST_DIR/scripts/setup-hotspot.sh
 fi
