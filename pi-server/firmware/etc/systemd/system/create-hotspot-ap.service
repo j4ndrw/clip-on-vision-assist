@@ -1,0 +1,11 @@
+[Unit]
+Description=Create hotspot AP Interface
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/iw dev wlan0 interface add ap0 type __ap
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
