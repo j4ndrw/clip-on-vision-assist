@@ -1,0 +1,12 @@
+[Unit]
+Description=Clip-On Vision Assist Client
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/clip-on-vision-assist-client
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=default.target

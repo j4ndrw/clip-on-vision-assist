@@ -38,6 +38,9 @@ speech_client.use(path="./models/speech/piper/en_US-amy-low.onnx")
 wakeword_model = openwakeword.model.Model()
 stt_model = vosk.Model(lang="en-us")
 
+@app.post("/api/healthcheck")
+async def healthcheck():
+    return Response(status_code=200)
 
 @app.post("/api/camera-frames")
 async def post_camera_frames(request: PostCameraFramesRequest):

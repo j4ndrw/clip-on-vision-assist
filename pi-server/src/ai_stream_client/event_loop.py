@@ -39,7 +39,8 @@ async def event_loop():
 
         while True:
             try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as http_client:
+                API.healthcheck()
+                async with httpx.AsyncClient() as http_client:
                     async with API.ai_stream(async_http_client=http_client) as ai_stream:
                         async for line in ai_stream.aiter_lines():
                             state, _ = await asyncio.gather(

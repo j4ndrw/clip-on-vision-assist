@@ -4,8 +4,14 @@ import httpx
 
 
 class API:
-    BASE_URL = "http://192.168.100.231:8000/api"
+    BASE_URL = "http://192.168.100.251:8000/api"
     # BASE_URL = "http://localhost:8000/api"
+
+    @classmethod
+    def healthcheck(cls) -> None:
+        r = httpx.post(f"{cls.BASE_URL}/healthcheck", timeout=httpx.Timeout(3.0))
+        if r.status_code != 200:
+            raise httpx.ConnectError("API failed healthcheck")
 
     @classmethod
     def send_microphone_audio(cls, chunk: str) -> None:

@@ -60,5 +60,7 @@ function connect_bluetooth_headphones()
 
 connect_bluetooth_headphones $1
 
+sleep 3
+
 AUDIO_CARD=$(pactl list cards | grep 'Name:' | awk -F': ' '{print $2}')
 pactl set-card-profile $AUDIO_CARD headset_head_unit
