@@ -50,3 +50,5 @@ async def event_loop():
                 break
             except httpx.ConnectError:
                 await asyncio.sleep(1)
+            except httpx.ConnectTimeout:
+                await asyncio.sleep(1)
