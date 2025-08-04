@@ -8,6 +8,9 @@ from src.ai_stream_client.client import AIStreamClient
 from src.ai_stream_client.state_machines.state import State
 from src.ai_stream_client.state_machines.state_machine import StateMachine, StateMachineConfig
 from src.ai_stream_client.state_machines.register import currently_active_state_machine
+from src.control_center.services.bluetooth.connect_bluetooth_headphones import connect_bluetooth_headphones
+from src.control_center.env import environment
+from src.control_center.services.os.audio.set_audio_device_to_hands_free_mode import set_audio_device_to_hands_free_mode
 
 
 async def receive_event(
@@ -32,6 +35,20 @@ async def consume_event(state: State):
 
 
 async def event_loop():
+    while True:
+        bluetooth_headphones_mac_address = environment.get()["BLUETOOTH_HEADPHONES_MAC"]
+        if bluetooth_headphones_mac_address is None:
+            raise Exception("Bluetooth headphones must be connected!")
+
+        err = await connect_bluetooth_headphones(mac_address=bluetooth_headphones_mac_address)
+        if err is None:
+            break
+
+        await asyncio.sleep(1)
+
+    await asyncio.sleep(5)
+    set_audio_device_to_hands_free_mode()
+
     while True:
         client = AIStreamClient()
         state = State()

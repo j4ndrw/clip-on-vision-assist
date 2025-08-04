@@ -4,7 +4,7 @@ import httpx
 
 
 class API:
-    BASE_URL = "http://192.168.100.253:8000/api"
+    BASE_URL = "http://192.168.100.16:8000/api"
     # BASE_URL = "http://localhost:8000/api"
 
     @classmethod
