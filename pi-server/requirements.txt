@@ -4,3 +4,7 @@ httpx
 flask
 flask-cors
 v4l2py
+Flask-Pydantic
+pydantic
+bleak
+python-dotenv
