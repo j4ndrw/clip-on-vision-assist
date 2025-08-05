@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4c20b83e64deab7a6da86cdeb3693258bab473091d102447404e9ee50f3743a5"
+            "sha256": "efdfd737be5e2c0c01594951606f72a5b48f8d817f12beda83aa8c1aa6f64a62"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -432,6 +432,15 @@
             "index": "pypi",
             "markers": "python_version >= '3.9'",
             "version": "==1.1.1"
+        },
+        "pywifi": {
+            "hashes": [
+                "sha256:6da15de5d573635a461a95919920788b6f61748e1bd93a5e3504f456cf2e8bcc",
+                "sha256:d1b79d9ff054eef1aca4ab97f2641650d001d6740bfa7666a7d9506bcfb8459b"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "version": "==1.1.12"
         },
         "sniffio": {
             "hashes": [
