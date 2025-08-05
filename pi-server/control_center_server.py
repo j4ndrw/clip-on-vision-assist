@@ -1,6 +1,6 @@
 import asyncio
 from http import HTTPStatus
-from flask import Flask, Response
+from flask import Flask, Response, request
 from flask_cors import CORS
 from flask_pydantic import validate
 
@@ -15,15 +15,16 @@ CORS(app)
 
 
 @app.get("/api/bluetooth")
-@validate()
+@validate(response_by_alias=True)
 def get_bluetooth_devices_route():
     bluetooth_devices = loop.run_until_complete(get_bluetooth_devices())
     return GetBluetoothDevicesResponse(bluetooth_devices=bluetooth_devices).as_json()
 
 @app.post("/api/bluetooth/headphones")
-@validate()
-def connect_bluetooth_headphones_route(request: ConnectBluetoothHeadphonesRequest):
-    err = loop.run_until_complete(connect_bluetooth_headphones(mac_address=request.mac_address))
+@validate(body=ConnectBluetoothHeadphonesRequest, response_by_alias=True)
+def connect_bluetooth_headphones_route():
+    body = ConnectBluetoothHeadphonesRequest(**request.json or {})
+    err = loop.run_until_complete(connect_bluetooth_headphones(mac_address=body.mac_address))
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
     return Response(status=HTTPStatus.OK)
