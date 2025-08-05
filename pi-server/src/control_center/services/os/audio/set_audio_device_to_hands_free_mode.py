@@ -1,6 +1,8 @@
 import subprocess
 
-def set_audio_device_to_hands_free_mode():
+from src.control_center.sync.async_loop import async_loop
+
+async def set_audio_device_to_hands_free_mode_async():
     get_audio_card_process = subprocess.Popen(
         "pactl list cards | grep 'Name:' | awk -F': ' '{print $2}'",
         shell=True,
@@ -23,3 +25,6 @@ def set_audio_device_to_hands_free_mode():
 
     if stderr:
         raise Exception(stderr.decode().strip())
+
+def set_audio_device_to_hands_free_mode():
+    async_loop.run_until_complete(set_audio_device_to_hands_free_mode_async())

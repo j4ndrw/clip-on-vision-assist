@@ -1,12 +1,14 @@
+import asyncio
 import time
 from typing import Optional
 
 import pywifi
+from src.control_center.sync.async_loop import async_loop
 from src.control_center.models.error import Error
 from src.control_center.env import environment
 
 
-def connect_to_network(
+async def connect_to_network_async(
     *,
     target_iface: str = "wlan0",
     ssid: str,
@@ -31,7 +33,7 @@ def connect_to_network(
 
     iface.disconnect()
     iface.connect(iface.add_network_profile(profile))
-    time.sleep(10)
+    await asyncio.sleep(10)
 
     if iface.status() != pywifi.const.IFACE_CONNECTED:
         return Error(message=f"Could not connect to wi-fi `{ssid}`")
@@ -41,3 +43,15 @@ def connect_to_network(
             iface.remove_network_profile(profile)
     environment.update(key="WIFI_SSID", value=ssid).update(key="WIFI_PASSWORD", value=password)
     return None
+
+def connect_to_network(
+    *,
+    target_iface: str = "wlan0",
+    ssid: str,
+    password: str,
+) -> Optional[Error]:
+    async_loop.run_until_complete(connect_to_network_async(
+        target_iface=target_iface,
+        ssid=ssid,
+        password=password,
+    ))

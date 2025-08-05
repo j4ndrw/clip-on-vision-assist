@@ -12,8 +12,8 @@ from src.control_center.services.bluetooth.get_bluetooth_devices import get_blue
 from src.control_center.services.bluetooth.connect_bluetooth_headphones import connect_bluetooth_headphones
 from src.control_center.services.wifi.scan_networks import scan_networks
 from src.control_center.services.wifi.connect_to_network import connect_to_network
+from src.control_center.sync.async_loop import async_loop
 
-loop = asyncio.get_event_loop()
 app = Flask(__name__)
 CORS(app)
 
@@ -21,14 +21,14 @@ CORS(app)
 @app.get("/api/bluetooth")
 @validate(response_by_alias=True)
 def get_bluetooth_devices_route():
-    bluetooth_devices = loop.run_until_complete(get_bluetooth_devices())
+    bluetooth_devices = async_loop.run_until_complete(get_bluetooth_devices())
     return GetBluetoothDevicesResponse(bluetooth_devices=bluetooth_devices).as_json()
 
 @app.post("/api/bluetooth/headphones")
 @validate(body=ConnectBluetoothHeadphonesRequest, response_by_alias=True)
 def connect_bluetooth_headphones_route():
     body = ConnectBluetoothHeadphonesRequest(**request.json or {})
-    err = loop.run_until_complete(connect_bluetooth_headphones(mac_address=body.mac_address))
+    err = async_loop.run_until_complete(connect_bluetooth_headphones(mac_address=body.mac_address))
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
     return Response(status=HTTPStatus.OK)
