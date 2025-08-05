@@ -11,6 +11,7 @@ from src.ai_stream_client.state_machines.register import currently_active_state_
 from src.control_center.services.bluetooth.connect_bluetooth_headphones import connect_bluetooth_headphones
 from src.control_center.env import environment
 from src.control_center.services.os.audio.set_audio_device_to_hands_free_mode import set_audio_device_to_hands_free_mode
+from src.control_center.services.wifi.connect_to_network import connect_to_network
 
 
 async def receive_event(
@@ -35,6 +36,17 @@ async def consume_event(state: State):
 
 
 async def event_loop():
+    while True:
+        wifi_ssid = environment.get()["WIFI_SSID"]
+        wifi_password = environment.get()["WIFI_PASSWORD"]
+        if wifi_ssid is None or wifi_password is None:
+            raise Exception("No Wi-Fi credentials supplied. Aborting...")
+        err = connect_to_network(ssid=wifi_ssid, password=wifi_password)
+        if err is None:
+            break
+
+        await asyncio.sleep(10)
+
     while True:
         bluetooth_headphones_mac_address = environment.get()["BLUETOOTH_HEADPHONES_MAC"]
         if bluetooth_headphones_mac_address is None:
