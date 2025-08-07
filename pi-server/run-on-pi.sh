@@ -10,7 +10,5 @@ if ! cat $HOME/.profile | grep "FIRST_TIME_EXPORT"; then
   ./setup.sh
 fi
 
-pip install --user -r $DEST_DIR/requirements.txt
-
 cd $DEST_DIR
 python3 ./client.py

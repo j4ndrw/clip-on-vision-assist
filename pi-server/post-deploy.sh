@@ -42,4 +42,7 @@ sudo ln -sf /usr/lib/systemd/user/default.target $USER_SYSTEMD_DIR/default.targe
 sudo cp $DEST_DIR/firmware/etc/systemd/system/$SYSTEMD_CREATE_HOTSPOT_SERVICE $ROOT_SYSTEMD_DIR/$SYSTEMD_CREATE_HOTSPOT_SERVICE
 
 enable_systemd_services
+
+pip install --user -r $DEST_DIR/requirements.txt
+
 sudo reboot now
