@@ -5,7 +5,7 @@ from typing import Optional
 import pywifi
 from src.control_center.sync.async_loop import async_loop
 from src.control_center.models.error import Error
-from src.control_center.env import environment
+from src.env import environment
 
 
 async def connect_to_network_async(
@@ -31,8 +31,8 @@ async def connect_to_network_async(
     profile.key = password # pyright: ignore
 
 
-    iface.disconnect()
-    iface.connect(iface.add_network_profile(profile))
+    profile = iface.add_network_profile(profile)
+    iface.connect(profile)
     await asyncio.sleep(10)
 
     if iface.status() != pywifi.const.IFACE_CONNECTED:
