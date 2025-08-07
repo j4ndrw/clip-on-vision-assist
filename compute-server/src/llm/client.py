@@ -9,6 +9,7 @@ class LLMClient:
 
     def use(self, *, url: str, api_key: str | None = None):
         self._client = openai.OpenAI(base_url=url, api_key=api_key or "")
+        return self
 
     def get(self) -> openai.OpenAI:
         return self._client
@@ -23,6 +24,3 @@ class LLMClient:
                     content = event.chunk.choices[0].delta.content
                     if content:
                         yield content
-
-
-llm_client = LLMClient()
