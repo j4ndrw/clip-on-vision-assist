@@ -2,13 +2,17 @@
 
 set -xe
 
-DEST_DIR="$HOME/projects/clip-on-vision-assist-client"
-FIRMWARE_DIR="$DEST_DIR/firmware"
+FIRMWARE_DIR="<DEST_DIR>/firmware"
 
 HOTSPOT_SSID=
 HOTSPOT_PASSWORD=
 
-source <(grep = $DEST_DIR/.env)
+source <(grep = <DEST_DIR>/.env)
+
+function create_ap()
+{
+    /sbin/iw dev wlan0 interface add ap0 type __ap
+}
 
 function setup_static_ip()
 {
@@ -36,10 +40,11 @@ function configure_dnsmasq()
     sudo cp $FIRMWARE_DIR/etc/dnsmasq.conf /etc/dnsmasq.conf
 }
 
+
 sudo systemctl stop hostapd
 sudo systemctl stop dnsmasq
 
-
+create_ap
 setup_static_ip
 configure_hostapd
 configure_dnsmasq

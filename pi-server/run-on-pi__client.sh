@@ -2,10 +2,9 @@
 
 set -xe
 
-DEST_DIR="$HOME/projects/clip-on-vision-assist-client"
+DEST_DIR="$HOME/projects/clip-on-vision-assist-satellite"
 
 cd $DEST_DIR/scripts
-
 if ! cat $HOME/.profile | grep "FIRST_TIME_EXPORT"; then
   ./setup.sh
 fi
