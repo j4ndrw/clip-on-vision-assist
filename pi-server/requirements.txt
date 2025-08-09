@@ -9,3 +9,4 @@ pydantic==2.11.7
 bleak==1.0.1
 python-dotenv==1.1.1
 pywifi==1.1.12
+gunicorn==23.0.0

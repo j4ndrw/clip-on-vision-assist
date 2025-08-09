@@ -11,4 +11,4 @@ if ! cat $HOME/.profile | grep "FIRST_TIME_EXPORT"; then
 fi
 
 cd $DEST_DIR
-python3 ./client.py
+python3 ./ai_stream_client.py
