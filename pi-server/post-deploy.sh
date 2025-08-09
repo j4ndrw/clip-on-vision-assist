@@ -33,6 +33,15 @@ function allow_executables()
     chmod +x $SCRIPTS_DIR/*
 }
 
+function advertise_control_center_hostname_via_mdns()
+{
+    if ! sudo cat /etc/avahi/hosts | grep "192.168.4.1 control-center-cova.local"; then
+        sudo cp /etc/avahi/hosts /etc/avahi/hosts.bak
+        sudo echo "192.168.4.1 control-center-cova.local" | sudo tee -a /etc/avahi/hosts
+    fi
+    sudo cp $DEST_DIR/firmware/etc/avahi/services/control-center.service /etc/avahi/services/control-center.service
+}
+
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/scripts/setup-hotspot.sh
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/firmware/etc/systemd/system/$SYSTEMD_CREATE_HOTSPOT_SERVICE
 
@@ -58,5 +67,7 @@ sudo cp $DEST_DIR/firmware/etc/systemd/system/$SYSTEMD_CREATE_HOTSPOT_SERVICE $R
 enable_systemd_services
 
 pip install --user -r $DEST_DIR/requirements.txt
+
+advertise_control_center_hostname_via_mdns
 
 sudo reboot now
