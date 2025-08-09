@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from flask import Flask, Response
+from flask import Flask, Response, json
 from flask_cors import CORS
 
 from src.control_center.routes import llm, wifi, bluetooth, peripheral
@@ -9,7 +9,7 @@ CORS(app)
 
 @app.get("/api/healthcheck")
 def healthcheck():
-    return Response(status=HTTPStatus.OK)
+    return Response(response=json.dumps({}), status=HTTPStatus.OK)
 
 app.register_blueprint(bluetooth.bp, url_prefix="/api/bluetooth")
 app.register_blueprint(wifi.bp, url_prefix="/api/wifi")

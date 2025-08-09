@@ -44,6 +44,7 @@ function advertise_control_center_hostname_via_mdns()
 
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/scripts/setup-hotspot.sh
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/firmware/etc/systemd/system/$SYSTEMD_CREATE_HOTSPOT_SERVICE
+sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/firmware/etc/nginx/sites-available/control-center.conf
 
 allow_executables
 sudo ln -sf $DEST_DIR/run-on-pi__client.sh $CLIENT_LINKED_EXECUTABLE
@@ -69,5 +70,7 @@ enable_systemd_services
 pip install --user -r $DEST_DIR/requirements.txt
 
 advertise_control_center_hostname_via_mdns
+
+sudo ln -sf $DEST_DIR/firmware/etc/nginx/sites-available/control-center.conf /etc/nginx/sites-enabled/default
 
 sudo reboot now

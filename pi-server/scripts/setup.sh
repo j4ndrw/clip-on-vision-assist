@@ -69,10 +69,16 @@ function install_networking_dependencies()
         dnsmasq
 }
 
+function install_web_server_dependencies()
+{
+    sudo apt-get install -y nginx
+}
+
 if ! cat $HOME/.profile | grep "FIRST_TIME_EXPORT"; then
     first_time_exports
     install_general_dependencies
     install_audio_dependencies
     install_vision_dependencies
     install_networking_dependencies
+    install_web_server_dependencies
 fi
