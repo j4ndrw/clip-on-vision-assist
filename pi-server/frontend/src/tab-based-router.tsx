@@ -66,6 +66,7 @@ function TabBasedRouter<
         >
           {tabs.map((tab, idx) => (
             <Chip
+              key={tab.id}
               color={tab.id === activeTab ? "primary" : "default"}
               variant={tab.id === activeTab ? "filled" : "outlined"}
               onClick={handleTabClick(idx)}

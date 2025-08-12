@@ -113,7 +113,9 @@ function CameraConfiguration() {
 
   return (
     <>
-      <form onSubmit={handleSubmit(handleSaveConfiguration)}>
+      <form
+        style={{ width: "100%" }}
+        onSubmit={handleSubmit(handleSaveConfiguration)}>
         <Container
           sx={{
             display: "flex",
