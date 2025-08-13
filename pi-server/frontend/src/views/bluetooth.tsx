@@ -7,28 +7,27 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { useBluetoothStore } from "@/store";
 import { scanBluetoothDevices } from "@/services/bluetooth/scan-bluetooth-devices";
 import ScannedBluetoothDevices from "@/components/bluetooth/scanned-bluetooth-devices";
+import { useAlertSnackbars } from "@/hooks/use-alert-snackbars";
+import Snackbar from "@/design-system/snackbar";
 
 function Bluetooth() {
   const scanBluetoothDevicesInterval = useRef<NodeJS.Timeout>(null);
 
+  const alertSnackbars = useAlertSnackbars();
+
   const [scanning, setScanning] = useState(false);
   const { setDevices } = useBluetoothStore();
 
-  const handleScanBluetoothDevices = async () => {
-    await scanBluetoothDevices({
+  const handleScanBluetoothDevices = async () =>
+    scanBluetoothDevices({
       onValidationError: (error) => {
-        // TODO
-        console.log(error);
-        return;
+        alertSnackbars.setSnackbarErrorMessage(error.issues[0]?.message ?? "");
       },
       onApiError: (error) => {
-        // TODO
-        console.log(error);
-        return;
+        alertSnackbars.setSnackbarErrorMessage(error.message);
       },
       onSuccess: ({ bluetoothDevices }) => setDevices(bluetoothDevices),
-    });
-  };
+    }).promise();
 
   const stopBluetoothScan = () => {
     setScanning(false);
@@ -43,7 +42,10 @@ function Bluetooth() {
     setScanning(true);
 
     await handleScanBluetoothDevices();
-    scanBluetoothDevicesInterval.current = setInterval(handleScanBluetoothDevices, 10000);
+    scanBluetoothDevicesInterval.current = setInterval(
+      handleScanBluetoothDevices,
+      10000,
+    );
   };
 
   useEffect(() => {
@@ -53,42 +55,59 @@ function Bluetooth() {
   }, []);
 
   return (
-    <Container
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "2rem",
-      }}
-    >
-      <Typography variant="h6">Bluetooth Settings</Typography>
-      {!scanning && (
-        <Button onClick={startBluetoothScan} variant="outlined" color="primary">
-          Start Bluetooth Scan
-        </Button>
-      )}
-      {scanning && (
-        <Button onClick={stopBluetoothScan} variant="outlined" color="secondary">
-          Stop Bluetooth Scan
-        </Button>
-      )}
+    <>
+      <Container
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "2rem",
+        }}
+      >
+        <Typography variant="h6">Bluetooth Settings</Typography>
+        {!scanning && (
+          <Button
+            onClick={startBluetoothScan}
+            variant="outlined"
+            color="primary"
+          >
+            Start Bluetooth Scan
+          </Button>
+        )}
+        {scanning && (
+          <Button
+            onClick={stopBluetoothScan}
+            variant="outlined"
+            color="secondary"
+          >
+            Stop Bluetooth Scan
+          </Button>
+        )}
 
-      <ScannedBluetoothDevices preconnectFn={stopBluetoothScan} />
-      {scanning && (
-        <Container
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
-          <Typography variant="overline">Scanning for bluetooth devices</Typography>
-          <CircularProgress color="info" size="1rem" />
-        </Container>
-      )}
-    </Container>
+        <ScannedBluetoothDevices preconnectFn={stopBluetoothScan} />
+        {scanning && (
+          <Container
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "1rem",
+            }}
+          >
+            <Typography variant="overline">
+              Scanning for bluetooth devices
+            </Typography>
+            <CircularProgress color="info" size="1rem" />
+          </Container>
+        )}
+      </Container>
+      <Snackbar
+        message={alertSnackbars.snackbarErrorMessage}
+        onClose={alertSnackbars.handleErrorSnackbarClose}
+        severity="error"
+      />
+    </>
   );
 }
 

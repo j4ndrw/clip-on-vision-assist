@@ -8,20 +8,25 @@ import { useState } from "react";
 import { Bluetooth as BluetoothIcon } from "@mui/icons-material";
 import CircularProgress from "@mui/material/CircularProgress";
 import Snackbar from "@/design-system/snackbar";
+import { useAlertSnackbars } from "@/hooks/use-alert-snackbars";
 
 const ScannedBluetoothDevices: React.FC<{ preconnectFn: () => void }> = ({
   preconnectFn,
 }) => {
+  const {
+    snackbarSuccessMessage,
+    snackbarErrorMessage,
+    setSnackbarSuccessMessage,
+    setSnackbarErrorMessage,
+  } = useAlertSnackbars();
   const { devices } = useBluetoothStore();
 
   const [selectedDevice, setSelectedDevice] = useState("");
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarErrorMessage, setSnackbarErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSnackbarClose = () => {
     setSelectedDevice("");
-    setSnackbarMessage("");
+    setSnackbarSuccessMessage("");
     setSnackbarErrorMessage("");
     setLoading(false);
   };
@@ -30,23 +35,23 @@ const ScannedBluetoothDevices: React.FC<{ preconnectFn: () => void }> = ({
     preconnectFn();
     setLoading(true);
     setSelectedDevice(device.macAddress);
-    await connectToBluetoothHeadphones({
+    connectToBluetoothHeadphones({
       input: { macAddress: device.macAddress },
       onApiError: (error) => {
         setSelectedDevice("");
-        setSnackbarMessage("");
+        setSnackbarSuccessMessage("");
         setSnackbarErrorMessage(error.message);
         setLoading(false);
       },
       onSuccess: () => {
         setSelectedDevice("");
-        setSnackbarMessage(
+        setSnackbarSuccessMessage(
           `Successfully connected to bluetooth device \`${device.name ?? device.macAddress}\``,
         );
         setSnackbarErrorMessage("");
         setLoading(false);
       },
-    });
+    }).promise();
   };
 
   return (
@@ -96,7 +101,7 @@ const ScannedBluetoothDevices: React.FC<{ preconnectFn: () => void }> = ({
         ))}
       </Container>
       <Snackbar
-        message={snackbarMessage}
+        message={snackbarSuccessMessage}
         severity="success"
         autoHideDuration={6000}
         onClose={handleSnackbarClose}

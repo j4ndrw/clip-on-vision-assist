@@ -1,16 +1,4 @@
 import { healthCheckApi } from "@/api";
-import type { ApiError } from "@/api/types";
+import { createBareQueryService } from "./utils";
 
-export const healthCheck = async (options: {
-  onApiError: (error: ApiError) => void;
-  onSuccess: () => void;
-}) => {
-  const { apiError } = await healthCheckApi.request();
-
-  if (apiError) {
-    options.onApiError(apiError);
-    return;
-  }
-
-  options.onSuccess();
-};
+export const healthCheck = createBareQueryService(healthCheckApi)

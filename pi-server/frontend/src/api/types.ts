@@ -10,3 +10,4 @@ export type Method =
 export type ApiError = {
   message: string
 }
+
