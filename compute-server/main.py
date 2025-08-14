@@ -57,13 +57,17 @@ async def microphone_stream(request: MicrophoneStreamRequest):
 @app.post("/api/ai-stream")
 async def ai_stream(
     x_llm_backend_endpoint: Annotated[str | None, Header()] = None,
-    x_llm_backend_api_key: Annotated[str | None, Header()] = None
+    x_llm_backend_api_key: Annotated[str | None, Header()] = None,
+    x_llm: Annotated[str | None, Header()] = None
 ):
     if x_llm_backend_endpoint is None:
         return Response(json.dumps({"error": "No LLM backend endpoint provided!"}), status_code=400, media_type="application/json")
 
     if x_llm_backend_api_key is None:
         return Response(json.dumps({"error": "No LLM backend API key provided!"}), status_code=400, media_type="application/json")
+
+    if x_llm is None:
+        return Response(json.dumps({"error": "No LLM provided!"}), status_code=400, media_type="application/json")
 
     return StreamingResponse(
         ai_stream_state_machine(
@@ -74,7 +78,7 @@ async def ai_stream(
                     wakeword_model=wakeword_model,
                     stt_model=stt_model,
                     chat_history=chat_history,
-                    llm="qwen2.5vl:3b",
+                    llm=x_llm,
                 )
             )
         ),
