@@ -2,6 +2,8 @@ import base64
 import json
 from typing import Annotated
 
+import openai
+
 import openwakeword.model
 import openwakeword.utils
 import vosk
@@ -96,7 +98,10 @@ async def get_available_llms(
     if x_llm_backend_api_key is None:
         return Response(json.dumps({"error": "No LLM backend API key provided!"}), status_code=400, media_type="application/json")
 
-    models = LLMClient().use(url=x_llm_backend_endpoint, api_key=x_llm_backend_api_key).get().models.list()
-    models = sorted(models, key=lambda m: m.created, reverse=True)
-    models = [model.id for model in models]
-    return Response(json.dumps(models), status_code=200, media_type="application/json")
+    try:
+        models = LLMClient().use(url=x_llm_backend_endpoint, api_key=x_llm_backend_api_key).get().models.list()
+        models = sorted(models, key=lambda m: m.created, reverse=True)
+        models = [model.id for model in models]
+        return Response(json.dumps(models), status_code=200, media_type="application/json")
+    except openai.APIConnectionError:
+        return Response(json.dumps({"error": "Could not reach the provided endpoint!"}), status_code=400, media_type="application/json")
