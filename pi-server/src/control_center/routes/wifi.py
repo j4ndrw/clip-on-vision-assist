@@ -6,7 +6,7 @@ from src.control_center.models.wifi.endpoint.connect_to_network import ConnectTo
 from src.control_center.services.wifi.scan_networks import scan_networks
 from src.control_center.services.wifi.connect_to_network import connect_to_network
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, json, request
 
 bp = Blueprint('wifi', __name__)
 
@@ -27,4 +27,4 @@ def connect_to_network_route():
     err = connect_to_network(ssid=body.ssid, password=body.password)
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
-    return Response(status=200)
+    return Response(response=json.dumps({}), status=HTTPStatus.OK)

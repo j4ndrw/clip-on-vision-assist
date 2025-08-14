@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from flask import Response, request
+from flask import Response, json, request
 from flask_pydantic import validate
 
 from src.control_center.models.bluetooth.endpoint.get_bluetooth_devices import GetBluetoothDevicesResponse
@@ -26,4 +26,4 @@ def connect_bluetooth_headphones_route():
     err = async_loop.run_until_complete(connect_bluetooth_headphones(mac_address=body.mac_address))
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
-    return Response(status=HTTPStatus.OK)
+    return Response(response=json.dumps({}), status=HTTPStatus.OK)

@@ -38,9 +38,6 @@ async def connect_to_network_async(
     if iface.status() != pywifi.const.IFACE_CONNECTED:
         return Error(message=f"Could not connect to wi-fi `{ssid}`")
 
-    for profile in iface.scan_results():
-        if profile.ssid != ssid:
-            iface.remove_network_profile(profile)
     environment.update(key="WIFI_SSID", value=ssid).update(key="WIFI_PASSWORD", value=password)
     return None
 
@@ -50,7 +47,7 @@ def connect_to_network(
     ssid: str,
     password: str,
 ) -> Optional[Error]:
-    async_loop.run_until_complete(connect_to_network_async(
+    return async_loop.run_until_complete(connect_to_network_async(
         target_iface=target_iface,
         ssid=ssid,
         password=password,
