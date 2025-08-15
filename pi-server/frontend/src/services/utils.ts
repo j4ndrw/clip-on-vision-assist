@@ -36,6 +36,7 @@ export const createMutationService = <
   TOptions extends (TApi["requestSchema"] extends TRequestSchema
     ? { input: z.infer<TApi["requestSchema"]> }
     : object) & {
+      queryParams?: Record<string, string>,
       onApiError: (error: ApiError) => void;
       onSuccess: () => void;
       onCancel?: (requestId: string) => void;
@@ -47,6 +48,7 @@ export const createMutationService = <
   createService<typeof api, TOptions>(
     (options) =>
       api.request(
+        options.queryParams,
         "input" in options ? options.input : undefined,
         options.cancelIf,
       ) as any,
@@ -71,6 +73,7 @@ export const createQueryService = <
   TRequest extends (...args: any[]) => RequestRet<TResponseSchema>,
   TApi extends { request: TRequest; responseSchema: TResponseSchema },
   TOptions extends {
+    queryParams?: Record<string, string>,
     onValidationError: (
       error: z.ZodError<z.infer<TApi["responseSchema"]>>,
     ) => void;
@@ -83,7 +86,7 @@ export const createQueryService = <
   api: TApi,
 ) =>
   createService<typeof api, TOptions>(
-    (options) => api.request(undefined, options.cancelIf) as any,
+    (options) => api.request(options.queryParams, undefined, options.cancelIf) as any,
     (options, { requestId, data, error, apiError, cancelled }) => {
       if (cancelled) {
         options.onCancel?.(requestId);
@@ -118,7 +121,7 @@ export const createBareQueryService = <
   api: TApi,
 ) =>
   createService<typeof api, TOptions>(
-    (options) => api.request(undefined, options.cancelIf) as any,
+    (options) => api.request(undefined, undefined, options.cancelIf) as any,
     (options, { requestId, apiError, cancelled }) => {
       if (cancelled) {
         options.onCancel?.(requestId);
