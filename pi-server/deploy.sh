@@ -5,7 +5,7 @@ set -xe
 USER=$1
 IP=$2
 
-DEST_DIR="/home/$USER/projects/clip-on-vision-assist-client"
+DEST_DIR="/home/$USER/projects/clip-on-vision-assist-satellite"
 
 function remote_cmd()
 {

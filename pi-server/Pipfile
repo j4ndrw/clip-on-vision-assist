@@ -10,6 +10,12 @@ httpx = "*"
 flask = "*"
 flask-cors = "*"
 v4l2py = "*"
+flask-pydantic = "*"
+pydantic = "*"
+bleak = "*"
+python-dotenv = "*"
+pywifi = "*"
+gunicorn = "*"
 
 [dev-packages]
 black = "*"

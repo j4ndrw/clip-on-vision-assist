@@ -2,10 +2,11 @@ import json
 
 import httpx
 
+from src.constants.api import COMPUTE_SERVER_API_BASE_URL
+
 
 class API:
-    BASE_URL = "http://192.168.100.253:8000/api"
-    # BASE_URL = "http://localhost:8000/api"
+    BASE_URL = COMPUTE_SERVER_API_BASE_URL
 
     @classmethod
     def healthcheck(cls) -> None:

@@ -7,11 +7,13 @@ import pydub.playback
 import pydub.silence
 
 from src.ai_stream_client.constants import CHANNELS, SAMPLE_RATE, SAMPLE_WIDTH
+from src.control_center.models.peripheral.microphone import SilenceDetectionConfig
 
 
-def silence_detected(
-    *, min_silence_len_ms=2000, silence_threshold_dBFS=-25
-) -> Callable[[list[bytes]], bool]:
+def silence_detected(*, config: SilenceDetectionConfig) -> Callable[[list[bytes]], bool]:
+    min_silence_len_ms = config.min_silence_len_ms
+    silence_threshold_dBFS = config.silence_threshold_dbfs
+
     def ret(audio_chunks: list[bytes]) -> bool:
         if len(audio_chunks) == 0:
             return False
