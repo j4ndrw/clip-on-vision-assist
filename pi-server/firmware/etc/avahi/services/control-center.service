@@ -1,0 +1,12 @@
+<?xml version='1.0' standalone='no'?>
+<!DOCTYPE service-group [
+<!ENTITY xxd SYSTEM "file:///dev/null">
+]>
+<service-group>
+  <name replace-wildcards='yes'>Control Center for Clip-On Vision Assist</name>
+  <service>
+    <name replace-wildcards='yes'>control-center-cova</name>
+    <port>42068</port>
+    <txt-record>path=/</txt-record>
+  </service>
+</service-group>

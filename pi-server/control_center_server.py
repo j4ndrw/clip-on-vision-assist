@@ -7,7 +7,7 @@ from src.control_center.routes import llm, wifi, bluetooth, peripheral
 app = Flask(__name__)
 CORS(app)
 
-@app.post("/api/healthcheck")
+@app.get("/api/healthcheck")
 def healthcheck():
     return Response(status=HTTPStatus.OK)
 
