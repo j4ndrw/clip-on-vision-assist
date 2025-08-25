@@ -15,6 +15,7 @@ pydantic = "*"
 bleak = "*"
 python-dotenv = "*"
 pywifi = "*"
+gunicorn = "*"
 
 [dev-packages]
 black = "*"

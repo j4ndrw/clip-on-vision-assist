@@ -49,7 +49,11 @@ class WakewordBasedStateMachineTasks:
             API.send_camera_frames(video_buf)
 
             audio_buf += b"".join(
-                self.client.io.capture_audio_until(silence_detected()).consume().ret
+                self.client.io.capture_audio_until(
+                    silence_detected(
+                        config=self.client.io.microphone_config.silence_detection_config
+                    )
+                ).consume().ret
             )
             API.send_microphone_audio(as_base64(audio_buf))
 

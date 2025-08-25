@@ -2,7 +2,7 @@
 
 set -xe
 
-DEST_DIR="$HOME/projects/clip-on-vision-assist-client"
+DEST_DIR="$HOME/projects/clip-on-vision-assist-satellite"
 
 function first_time_exports()
 {
@@ -75,5 +75,4 @@ if ! cat $HOME/.profile | grep "FIRST_TIME_EXPORT"; then
     install_audio_dependencies
     install_vision_dependencies
     install_networking_dependencies
-    $DEST_DIR/scripts/setup-hotspot.sh
 fi

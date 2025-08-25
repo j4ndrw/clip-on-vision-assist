@@ -1,0 +1,12 @@
+[Unit]
+Description=Clip-On Vision Assist Control Center Server
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/clip-on-vision-assist-control-center-server
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=default.target

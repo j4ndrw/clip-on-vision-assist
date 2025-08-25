@@ -12,12 +12,21 @@ from src.ai_stream_client.constants import (
     SAMPLE_FORMAT,
     SAMPLE_RATE,
 )
+from src.control_center.models.peripheral.camera import CameraConfig
+from src.control_center.models.peripheral.microphone import MicrophoneConfig
 from src.utils.generator import StatefulGenerator
 
 
 class AIStreamIO:
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        microphone_config: MicrophoneConfig = MicrophoneConfig.from_environment(),
+        camera_config: CameraConfig = CameraConfig.from_environment()
+    ):
         self.microphone_stream: Optional[pyaudio.Stream] = None
+        self.microphone_config = microphone_config
+        self.camera_config = camera_config
 
     def open_audio_stream(self):
         self.microphone_stream = pyaudio.PyAudio().open(
@@ -38,7 +47,9 @@ class AIStreamIO:
         self.close_audio_stream()
         self.open_audio_stream()
 
-    def capture_audio_chunk(self, *, seconds: float = 1):
+    def capture_audio_chunk(self):
+        seconds = self.microphone_config.audio_capture_config.seconds_per_chunk
+
         def gen():
             ret: list[bytes] = []
 
@@ -61,9 +72,10 @@ class AIStreamIO:
 
         return StatefulGenerator(gen())
 
-    def capture_audio_until(
-        self, until: Callable[[list[bytes]], bool], *, seconds: float = 1, max_chunks=25
-    ):
+    def capture_audio_until(self, until: Callable[[list[bytes]], bool]):
+        seconds = self.microphone_config.audio_capture_config.seconds_per_chunk
+        max_chunks = self.microphone_config.audio_capture_config.max_chunks
+
         def gen():
             ret: list[bytes] = []
             audio_chunks: list[bytes] = []
@@ -89,7 +101,11 @@ class AIStreamIO:
 
         return StatefulGenerator(gen())
 
-    def capture_video(self, *, n=2, fps=1, factor=2):
+    def capture_video(self):
+        n = self.camera_config.num_frames_to_capture
+        fps = self.camera_config.fps
+        factor = self.camera_config.wait_for_next_batch_factor
+
         def gen():
             with v4l2py.Device.from_id(0) as camera:
                 capture = v4l2py.VideoCapture(camera)
