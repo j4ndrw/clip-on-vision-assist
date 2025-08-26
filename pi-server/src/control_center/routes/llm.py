@@ -2,6 +2,7 @@ from http import HTTPStatus
 from flask import Response, json, request
 from flask_pydantic import validate
 
+from src.control_center.models.error import Error
 from src.control_center.models.llm.endpoint.amend_llm_configuration import AmendLLMConfigurationRequest
 from src.control_center.models.llm.endpoint.get_available_llms import GetAvailableLLMsResponse
 from src.control_center.models.llm.endpoint.get_current_llm_configuration import GetCurrentLLMConfigurationResponse
@@ -33,7 +34,11 @@ def amend_llm_configuration_route():
 @bp.get("/list")
 @validate()
 def get_available_llms_route():
-    llms, err = get_available_llms()
+    endpoint = request.args.get('endpoint')
+    if not endpoint:
+        return Response(response=Error(message="No endpoint provided!").as_json(), status=HTTPStatus.BAD_REQUEST)
+
+    llms, err = get_available_llms(endpoint=endpoint)
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
 

@@ -56,6 +56,8 @@ export const useLlmConfiguration = ({ alertSnackbars }: Props) => {
       },
     }).promise();
 
+  // FIXME: Invalidate previous request or increase debounce time.
+  // Otherwise, race conditions can happen.
   const getAvailableLlmsIfEndpointIsValid = debounce(
     // FIXME: For some reason, if the compute server is on, but the LLM backend isn't
     // this doesn't trigger a retry :(
@@ -65,6 +67,7 @@ export const useLlmConfiguration = ({ alertSnackbars }: Props) => {
         const { error } = z.url().safeParse(endpoint);
         if (!error || isEndpointLocal(endpoint) || !!llmConfiguration?.apiKey) {
           return getAvailableLlms({
+            queryParams: { endpoint },
             onValidationError: (error) => {
               alertSnackbars?.setSnackbarSuccessMessage("");
               alertSnackbars?.setSnackbarErrorMessage(error.message);
