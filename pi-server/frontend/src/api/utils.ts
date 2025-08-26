@@ -46,17 +46,18 @@ export const createApiRequest =
     TResponseSchema extends z.ZodType,
   >({
     method,
-    endpoint,
+    endpoint: rawEndpoint,
     requestSchema,
     responseSchema,
     mock,
   }: ApiRequestConfig<TMethod, TRequestSchema, TResponseSchema>): ((
+    queryParams?: Record<string, string>,
     body?: typeof requestSchema extends undefined
       ? object
       : z.output<TRequestSchema>,
     cancelIf?: (requestId: string) => boolean,
   ) => RequestRet<TResponseSchema>) =>
-    (body, cancelIf) => {
+    (queryParams, body, cancelIf) => {
       const requestId = uuidv4();
       return {
         requestId,
@@ -96,6 +97,12 @@ export const createApiRequest =
             clearInterval(cancelCheckInterval);
           });
 
+          const endpoint = (() => {
+          if (!queryParams) return rawEndpoint;
+
+          const searchParams = new URLSearchParams(queryParams).toString()
+          return `${rawEndpoint}?${searchParams}`
+        })();
           const response = await fetch(endpoint, requestOptions);
 
           if (!response.ok) {
