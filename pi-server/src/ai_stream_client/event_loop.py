@@ -35,6 +35,20 @@ async def consume_event(state: State):
 
     state.task()
 
+def headers():
+    llm_backend_endpoint = environment.get()["LLM_BACKEND_ENDPOINT"]
+    llm_backend_api_key = environment.get()["LLM_BACKEND_API_KEY"]
+    llm = environment.get()["LLM"]
+
+    assert llm_backend_endpoint is not None, "`LLM_BACKEND_ENDPOINT` environment variable not set!"
+    assert llm_backend_api_key is not None, "`LLM_BACKEND_API_KEY` environment variable not set!"
+    assert llm is not None, "`LLM` environment variable not set!"
+
+    return {
+        "x-llm-backend-endpoint": llm_backend_endpoint or "",
+        "x-llm-backend-api-key": llm_backend_api_key or "",
+        "x-llm": llm or "",
+    }
 
 async def event_loop():
     while True:
@@ -77,6 +91,7 @@ async def event_loop():
         print(f"Could not connect to wifi - `{err.message}`")
         await asyncio.sleep(5)
 
+
     while True:
         client = AIStreamClient()
         state = State()
@@ -84,19 +99,11 @@ async def event_loop():
 
         while True:
             try:
-                llm_backend_endpoint = environment.get()["LLM_BACKEND_ENDPOINT"]
-                llm_backend_api_key = environment.get()["LLM_BACKEND_API_KEY"]
-
-                assert llm_backend_endpoint is not None, "`LLM_BACKEND_ENDPOINT` environment variable not set!"
-                assert llm_backend_api_key is not None, "`LLM_BACKEND_API_KEY` environment variable not set!"
-
                 API.healthcheck()
-                async with httpx.AsyncClient(headers={
-                    "x-llm-backend-endpoint": llm_backend_endpoint,
-                    "x-llm-backend-api-key": llm_backend_api_key,
-                }) as http_client:
+                async with httpx.AsyncClient(headers=headers()) as http_client:
                     async with API.ai_stream(async_http_client=http_client) as ai_stream:
                         async for line in ai_stream.aiter_lines():
+                            http_client.headers = headers()
                             state, _ = await asyncio.gather(
                                 receive_event(line, client, state, state_machine),
                                 consume_event(state),

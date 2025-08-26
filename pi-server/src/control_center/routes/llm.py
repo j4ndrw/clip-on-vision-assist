@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from flask import Response, request
+from flask import Response, json, request
 from flask_pydantic import validate
 
 from src.control_center.models.llm.endpoint.amend_llm_configuration import AmendLLMConfigurationRequest
@@ -28,7 +28,7 @@ def amend_llm_configuration_route():
     err = amend_llm_configuration(endpoint=body.endpoint, model=body.model, api_key=body.api_key)
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
-    return Response(status=200)
+    return Response(response=json.dumps({}), status=HTTPStatus.OK)
 
 @bp.get("/list")
 @validate()

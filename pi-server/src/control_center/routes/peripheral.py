@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from flask import Response, request
+from flask import Response, json, request
 from flask_pydantic import validate
 
 from src.control_center.models.peripheral.endpoint.amend_camera_config import AmendCameraConfigurationRequest
@@ -36,7 +36,7 @@ def amend_microphone_configuration_route():
     err = amend_microphone_configuration(microphone_config=body.microphone_config)
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
-    return Response(status=200)
+    return Response(response=json.dumps({}), status=HTTPStatus.OK)
 
 @bp.post("/camera/config")
 @validate(body=AmendCameraConfigurationRequest, response_by_alias=True)
@@ -45,5 +45,5 @@ def amend_camera_configuration_route():
     err = amend_camera_configuration(camera_config=body.camera_config)
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.BAD_REQUEST)
-    return Response(status=200)
+    return Response(response=json.dumps({}), status=HTTPStatus.OK)
 

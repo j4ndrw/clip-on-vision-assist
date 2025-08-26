@@ -2,6 +2,8 @@ import base64
 import json
 from typing import Annotated
 
+import openai
+
 import openwakeword.model
 import openwakeword.utils
 import vosk
@@ -57,13 +59,17 @@ async def microphone_stream(request: MicrophoneStreamRequest):
 @app.post("/api/ai-stream")
 async def ai_stream(
     x_llm_backend_endpoint: Annotated[str | None, Header()] = None,
-    x_llm_backend_api_key: Annotated[str | None, Header()] = None
+    x_llm_backend_api_key: Annotated[str | None, Header()] = None,
+    x_llm: Annotated[str | None, Header()] = None
 ):
     if x_llm_backend_endpoint is None:
         return Response(json.dumps({"error": "No LLM backend endpoint provided!"}), status_code=400, media_type="application/json")
 
     if x_llm_backend_api_key is None:
         return Response(json.dumps({"error": "No LLM backend API key provided!"}), status_code=400, media_type="application/json")
+
+    if x_llm is None:
+        return Response(json.dumps({"error": "No LLM provided!"}), status_code=400, media_type="application/json")
 
     return StreamingResponse(
         ai_stream_state_machine(
@@ -74,7 +80,7 @@ async def ai_stream(
                     wakeword_model=wakeword_model,
                     stt_model=stt_model,
                     chat_history=chat_history,
-                    llm="qwen2.5vl:3b",
+                    llm=x_llm,
                 )
             )
         ),
@@ -92,7 +98,10 @@ async def get_available_llms(
     if x_llm_backend_api_key is None:
         return Response(json.dumps({"error": "No LLM backend API key provided!"}), status_code=400, media_type="application/json")
 
-    models = LLMClient().use(url=x_llm_backend_endpoint, api_key=x_llm_backend_api_key).get().models.list()
-    models = sorted(models, key=lambda m: m.created, reverse=True)
-    models = [model.id for model in models]
-    return Response(json.dumps(models), status_code=200, media_type="application/json")
+    try:
+        models = LLMClient().use(url=x_llm_backend_endpoint, api_key=x_llm_backend_api_key).get().models.list()
+        models = sorted(models, key=lambda m: m.created, reverse=True)
+        models = [model.id for model in models]
+        return Response(json.dumps(models), status_code=200, media_type="application/json")
+    except openai.APIConnectionError:
+        return Response(json.dumps({"error": "Could not reach the provided endpoint!"}), status_code=400, media_type="application/json")
