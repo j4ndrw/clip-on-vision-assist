@@ -1,4 +1,5 @@
 import bleak
+
 from src.control_center.models.bluetooth.bluetooth import BluetoothDevice
 
 

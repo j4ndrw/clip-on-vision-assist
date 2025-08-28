@@ -1,5 +1,7 @@
 from typing import Optional
+
 from src.control_center.models.base import BaseSchema
+
 
 class LLMConfig(BaseSchema):
     model: str

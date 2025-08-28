@@ -3,15 +3,11 @@ import threading
 import time
 from typing import Callable, Optional
 
-import v4l2py
 import pyaudio
+import v4l2py
 
-from src.ai_stream_client.constants import (
-    CHANNELS,
-    CHUNK_SIZE,
-    SAMPLE_FORMAT,
-    SAMPLE_RATE,
-)
+from src.ai_stream_client.constants import (CHANNELS, CHUNK_SIZE,
+                                            SAMPLE_FORMAT, SAMPLE_RATE)
 from src.control_center.models.peripheral.camera import CameraConfig
 from src.control_center.models.peripheral.microphone import MicrophoneConfig
 from src.utils.generator import StatefulGenerator

@@ -1,14 +1,18 @@
 from http import HTTPStatus
-from flask_pydantic import validate
-
-from src.control_center.models.wifi.endpoint.scan_networks import ScanNetworksResponse
-from src.control_center.models.wifi.endpoint.connect_to_network import ConnectToNetworkRequest
-from src.control_center.services.wifi.scan_networks import scan_networks
-from src.control_center.services.wifi.connect_to_network import connect_to_network
 
 from flask import Blueprint, Response, json, request
+from flask_pydantic import validate
 
-bp = Blueprint('wifi', __name__)
+from src.control_center.models.wifi.endpoint.connect_to_network import \
+    ConnectToNetworkRequest
+from src.control_center.models.wifi.endpoint.scan_networks import \
+    ScanNetworksResponse
+from src.control_center.services.wifi.connect_to_network import \
+    connect_to_network
+from src.control_center.services.wifi.scan_networks import scan_networks
+
+bp = Blueprint("wifi", __name__)
+
 
 @bp.get("")
 @bp.get("/")
@@ -18,6 +22,7 @@ def scan_networks_route():
     if err is not None:
         return Response(response=err.as_json(), status=HTTPStatus.CONFLICT)
     return ScanNetworksResponse(wifi_networks=wifi_networks).as_json()
+
 
 @bp.post("")
 @bp.post("/")

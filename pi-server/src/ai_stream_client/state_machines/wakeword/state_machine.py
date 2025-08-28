@@ -1,8 +1,14 @@
-from src.ai_stream_client.state_machines.wakeword.event import WakewordBasedStreamEventType
-from src.ai_stream_client.state_machines.state_machine import StateMachineConfig
-from src.ai_stream_client.state_machines.wakeword.tasks import WakewordBasedStateMachineTasks
+from src.ai_stream_client.state_machines.state_machine import \
+    StateMachineConfig
+from src.ai_stream_client.state_machines.wakeword.event import \
+    WakewordBasedStreamEventType
+from src.ai_stream_client.state_machines.wakeword.tasks import \
+    WakewordBasedStateMachineTasks
 
-def wakeword_based_state_machine(config: StateMachineConfig[WakewordBasedStreamEventType]):
+
+def wakeword_based_state_machine(
+    config: StateMachineConfig[WakewordBasedStreamEventType],
+):
     config.state.type = WakewordBasedStreamEventType(config.msg["type"])
     tasks = WakewordBasedStateMachineTasks(client=config.client)
     switch = {

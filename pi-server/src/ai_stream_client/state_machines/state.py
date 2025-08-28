@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Generic, TypeVar, Optional
+from typing import Callable, Generic, Optional, TypeVar
 
 T = TypeVar("T", bound=Enum)
+
 
 @dataclass
 class State(Generic[T]):

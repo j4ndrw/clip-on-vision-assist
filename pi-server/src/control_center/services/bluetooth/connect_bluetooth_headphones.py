@@ -1,8 +1,11 @@
 import asyncio
 from typing import Any, Callable, Coroutine, Optional
+
 import bleak
-from src.env import environment
+
 from src.control_center.models.error import Error
+from src.env import environment
+
 
 async def disconnect_from_current_device():
     current_device_mac_address = environment.get()["BLUETOOTH_HEADPHONES_MAC"]
@@ -13,10 +16,13 @@ async def disconnect_from_current_device():
         except Exception:
             pass
 
+
 async def connect_bluetooth_headphones(
     *,
     mac_address: str,
-    preparation_step: Optional[Callable[[], Coroutine[Any, Any, None]]] = disconnect_from_current_device,
+    preparation_step: Optional[
+        Callable[[], Coroutine[Any, Any, None]]
+    ] = disconnect_from_current_device,
 ) -> Optional[Error]:
     if preparation_step is not None:
         await preparation_step()

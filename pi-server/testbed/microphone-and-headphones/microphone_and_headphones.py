@@ -20,8 +20,7 @@ if __name__ == "__main__":
     )
     while True:
         chunk = b"".join(
-            stream.read(CHUNK_SIZE)
-            for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE))
+            stream.read(CHUNK_SIZE) for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE))
         )
         segment = pydub.AudioSegment.from_raw(
             io.BytesIO(chunk),

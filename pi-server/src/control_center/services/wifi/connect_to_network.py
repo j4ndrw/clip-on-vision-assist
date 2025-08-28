@@ -3,8 +3,9 @@ import time
 from typing import Optional
 
 import pywifi
-from src.control_center.sync.async_loop import async_loop
+
 from src.control_center.models.error import Error
+from src.control_center.sync.async_loop import async_loop
 from src.env import environment
 
 
@@ -24,12 +25,11 @@ async def connect_to_network_async(
         return Error(message=f"Wi-Fi interface `{target_iface}` was not found.")
 
     profile = pywifi.Profile()
-    profile.ssid = ssid # pyright: ignore
+    profile.ssid = ssid  # pyright: ignore
     profile.auth = pywifi.const.AUTH_ALG_OPEN
     profile.akm.append(pywifi.const.AKM_TYPE_WPA2PSK)
     profile.cipher = pywifi.const.CIPHER_TYPE_CCMP
-    profile.key = password # pyright: ignore
-
+    profile.key = password  # pyright: ignore
 
     profile = iface.add_network_profile(profile)
     iface.connect(profile)
@@ -38,8 +38,11 @@ async def connect_to_network_async(
     if iface.status() != pywifi.const.IFACE_CONNECTED:
         return Error(message=f"Could not connect to wi-fi `{ssid}`")
 
-    environment.update(key="WIFI_SSID", value=ssid).update(key="WIFI_PASSWORD", value=password)
+    environment.update(key="WIFI_SSID", value=ssid).update(
+        key="WIFI_PASSWORD", value=password
+    )
     return None
+
 
 def connect_to_network(
     *,
@@ -47,8 +50,10 @@ def connect_to_network(
     ssid: str,
     password: str,
 ) -> Optional[Error]:
-    return async_loop.run_until_complete(connect_to_network_async(
-        target_iface=target_iface,
-        ssid=ssid,
-        password=password,
-    ))
+    return async_loop.run_until_complete(
+        connect_to_network_async(
+            target_iface=target_iface,
+            ssid=ssid,
+            password=password,
+        )
+    )

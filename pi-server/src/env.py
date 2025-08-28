@@ -1,7 +1,9 @@
 import os
+
 import dotenv
 
 from src.control_center.constants import PROJECT_DIR
+
 
 class Environment:
     def __init__(self):
@@ -13,5 +15,6 @@ class Environment:
     def update(self, *, key: str, value: str):
         dotenv.set_key(self.env_file, key, value)
         return self
+
 
 environment = Environment()

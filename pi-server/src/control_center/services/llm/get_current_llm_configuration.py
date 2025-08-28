@@ -1,7 +1,7 @@
 from typing import Optional
 
-from src.env import environment
 from src.control_center.models.llm.llm import LLMConfig
+from src.env import environment
 
 
 def get_current_llm_configuration() -> LLMConfig:

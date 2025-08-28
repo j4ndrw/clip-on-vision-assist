@@ -2,11 +2,8 @@ import time
 from typing import Any
 
 from src.ai_stream_client.api import API
-from src.ai_stream_client.assets import (
-    PROMPT_CAPTURED,
-    READY_TO_LISTEN,
-    WAKEWORD_DETECTED,
-)
+from src.ai_stream_client.assets import (PROMPT_CAPTURED, READY_TO_LISTEN,
+                                         WAKEWORD_DETECTED)
 from src.ai_stream_client.client import AIStreamClient
 from src.utils.audio import play_asset, silence_detected
 from src.utils.data import as_base64
@@ -53,7 +50,9 @@ class WakewordBasedStateMachineTasks:
                     silence_detected(
                         config=self.client.io.microphone_config.silence_detection_config
                     )
-                ).consume().ret
+                )
+                .consume()
+                .ret
             )
             API.send_microphone_audio(as_base64(audio_buf))
 
