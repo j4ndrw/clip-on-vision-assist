@@ -1,7 +1,6 @@
 import base64
-import threading
 import time
-from typing import Callable, Optional
+from typing import Callable, Mapping, Optional
 
 import pyaudio
 import v4l2py
@@ -18,10 +17,15 @@ class AIStreamIO:
         self,
         *,
         microphone_config: MicrophoneConfig = MicrophoneConfig.from_environment(),
-        camera_config: CameraConfig = CameraConfig.from_environment()
+        camera_config: CameraConfig = CameraConfig.from_environment(),
+        on_microphone_chunk: Optional[Callable[[bytes], None]] = None
     ):
+        self.microphone_buffer: list[bytes] = []
         self.microphone_stream: Optional[pyaudio.Stream] = None
+        self.on_microphone_chunk = on_microphone_chunk
+        self.microphone_stream_start_time: Optional[float] = None
         self.microphone_config = microphone_config
+
         self.camera_config = camera_config
 
     def open_audio_stream(self):
@@ -31,6 +35,7 @@ class AIStreamIO:
             rate=SAMPLE_RATE,
             frames_per_buffer=CHUNK_SIZE,
             input=True,
+            stream_callback=self.capture_audio_chunk,
         )
 
     def close_audio_stream(self):
@@ -39,63 +44,44 @@ class AIStreamIO:
             self.microphone_stream.close()
             self.microphone_stream = None
 
+        self.microphone_stream_start_time = None
+        self.on_microphone_chunk = None
+        self.microphone_buffer = []
+
     def restart_audio_stream(self):
         self.close_audio_stream()
         self.open_audio_stream()
 
-    def capture_audio_chunk(self):
+    def capture_audio_chunk(
+        self,
+        in_data: Optional[bytes],
+        frame_count: int,
+        time_info: Mapping[str, float],
+        status: int,
+    ) -> tuple[Optional[bytes], int]:
+        if not self.on_microphone_chunk:
+            self.microphone_stream_start_time = None
+            return (in_data, pyaudio.paContinue)
+
+        if self.microphone_stream_start_time is None:
+            self.microphone_stream_start_time = self.microphone_stream_start_time or time.time()
+
+        if not in_data:
+            return (in_data, pyaudio.paContinue)
+
+        elapsed_time = time.time() - self.microphone_stream_start_time
         seconds = self.microphone_config.audio_capture_config.seconds_per_chunk
 
-        def gen():
-            ret: list[bytes] = []
+        if elapsed_time < seconds:
+            self.microphone_buffer.append(in_data)
+            return (in_data, pyaudio.paContinue)
 
-            def worker(audio_chunk: list[bytes]):
-                assert self.microphone_stream is not None
-                audio_chunk.append(
-                    b"".join(
-                        self.microphone_stream.read(CHUNK_SIZE)
-                        for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE * seconds))
-                    )
-                )
+        audio_chunk = b"".join(self.microphone_buffer)
+        self.microphone_buffer.clear()
+        self.microphone_stream_start_time = None
+        self.on_microphone_chunk(audio_chunk)
 
-            t = threading.Thread(target=worker, args=(ret,))
-            t.daemon = True
-            t.start()
-
-            while len(ret) == 0:
-                yield None
-            return ret[0]
-
-        return StatefulGenerator(gen())
-
-    def capture_audio_until(self, until: Callable[[list[bytes]], bool]):
-        seconds = self.microphone_config.audio_capture_config.seconds_per_chunk
-        max_chunks = self.microphone_config.audio_capture_config.max_chunks
-
-        def gen():
-            ret: list[bytes] = []
-            audio_chunks: list[bytes] = []
-
-            def worker(audio_chunks: list[bytes]):
-                assert self.microphone_stream is not None
-                while not until(audio_chunks) or len(audio_chunks) >= max_chunks:
-                    audio_chunks.append(
-                        b"".join(
-                            self.microphone_stream.read(CHUNK_SIZE)
-                            for _ in range(0, int(SAMPLE_RATE / CHUNK_SIZE * seconds))
-                        )
-                    )
-                ret.extend(audio_chunks)
-
-            t = threading.Thread(target=worker, args=(audio_chunks,))
-            t.daemon = True
-            t.start()
-
-            while len(ret) == 0:
-                yield None
-            return ret
-
-        return StatefulGenerator(gen())
+        return (in_data, pyaudio.paContinue)
 
     def capture_video(self):
         n = self.camera_config.num_frames_to_capture
@@ -107,21 +93,22 @@ class AIStreamIO:
                 capture = v4l2py.VideoCapture(camera)
                 capture.set_format(640, 480, "MJPG")
 
-                frames = 0
-                frames_in_batch = 0
-                batch_size = n // fps
-                for frame in camera:
-                    yield base64.b64encode(frame.data).decode("utf-8")
-                    frames += 1
+                time.sleep(0.2) # Give camera time to warm up
 
-                    if frames >= n:
+                frames = 0
+                frame_batch: list[v4l2py.Frame] = []
+                for frame in camera:
+                    if frames == n:
                         break
 
-                    if frames_in_batch + 1 >= batch_size:
-                        time.sleep(factor / fps)
+                    frame_batch.append(frame)
 
-                    frames_in_batch += 1
-                    frames_in_batch %= batch_size
+                    if len(frame_batch) % fps == fps - 1:
+                        for frame in frame_batch:
+                            frames += 1
+                            yield base64.b64encode(frame.data).decode("utf-8")
+                        frame_batch.clear()
+                        time.sleep(factor)
 
                 camera.close()
 
