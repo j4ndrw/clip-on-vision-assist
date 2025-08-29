@@ -59,13 +59,15 @@ function TabBasedRouter<
         </Typography>
         <Container
           sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "0.5rem",
+            display: "flex",
+            flexWrap: 'wrap',
+            gap: "0.5rem 0.5rem",
+            justifyContent: "center"
           }}
         >
           {tabs.map((tab, idx) => (
             <Chip
+              sx={{ padding: "1rem" }}
               key={tab.id}
               color={tab.id === activeTab ? "primary" : "default"}
               variant={tab.id === activeTab ? "filled" : "outlined"}
