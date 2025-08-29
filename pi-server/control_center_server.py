@@ -3,7 +3,7 @@ from http import HTTPStatus
 from flask import Flask, Response, json
 from flask_cors import CORS
 
-from src.control_center.routes import bluetooth, llm, peripheral, wifi, hotspot
+from src.control_center.routes import bluetooth, llm, peripheral, wifi, hotspot, testbed
 
 app = Flask(__name__)
 CORS(app)
@@ -19,6 +19,7 @@ app.register_blueprint(wifi.bp, url_prefix="/api/wifi")
 app.register_blueprint(llm.bp, url_prefix="/api/llm")
 app.register_blueprint(peripheral.bp, url_prefix="/api/peripheral")
 app.register_blueprint(hotspot.bp, url_prefix="/api/hotspot")
+app.register_blueprint(testbed.bp, url_prefix="/api/testbed")
 
 if __name__ == "__main__":
     app.run(port=42068)  # disappointing

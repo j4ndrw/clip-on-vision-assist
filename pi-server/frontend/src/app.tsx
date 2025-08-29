@@ -5,7 +5,8 @@ import {
   AutoFixHigh as LlmIcon,
   Settings as PeripheralIcon,
   Wifi as WifiIcon,
-  CellTower as HotspotIcon
+  CellTower as HotspotIcon,
+  Science as TestbedIcon,
 } from "@mui/icons-material";
 
 import Bluetooth from "./views/bluetooth";
@@ -13,6 +14,7 @@ import LlmConfiguration from "./views/llm-configuration";
 import Peripherals from "./views/peripherals";
 import Wifi from "./views/wifi";
 import HotspotConfiguration from "./views/hotspot-configuration";
+import Testbed from "./views/testbed";
 
 function App() {
   return (
@@ -45,6 +47,11 @@ function App() {
             Icon: () => <HotspotIcon />,
             label: "Hotspot Configuration",
           },
+          {
+            id: "testbed",
+            Icon: () => <TestbedIcon />,
+            label: "Testbed",
+          },
         ] as const
       }
       views={{
@@ -52,7 +59,8 @@ function App() {
         bluetooth: Bluetooth,
         peripherals: Peripherals,
         "llm-configuration": LlmConfiguration,
-        "hotspot-configuration": HotspotConfiguration
+        "hotspot-configuration": HotspotConfiguration,
+        testbed: Testbed,
       }}
     />
   );

@@ -10,6 +10,7 @@ from src.ai_stream_client.constants import (CHANNELS, CHUNK_SIZE,
 from src.control_center.models.peripheral.camera import CameraConfig
 from src.control_center.models.peripheral.microphone import MicrophoneConfig
 from src.utils.generator import StatefulGenerator
+from src.utils.video import get_usb_video_device_ids, keep_video_devices_with_mjpg_support
 
 
 class AIStreamIO:
@@ -89,27 +90,42 @@ class AIStreamIO:
         factor = self.camera_config.wait_for_next_batch_factor
 
         def gen():
-            with v4l2py.Device.from_id(0) as camera:
-                capture = v4l2py.VideoCapture(camera)
-                capture.set_format(640, 480, "MJPG")
+            while True:
+                device_ids = list(
+                    filter(
+                        keep_video_devices_with_mjpg_support, get_usb_video_device_ids()
+                    )
+                )
+                if len(device_ids) == 0:
+                    raise Exception("No video device found - cannot capture video")
 
-                time.sleep(0.2) # Give camera time to warm up
+                file_id = int(device_ids[0].replace("video", ""))
+                try:
+                    with v4l2py.Device.from_id(file_id) as camera:
+                        capture = v4l2py.VideoCapture(camera)
+                        capture.set_format(640, 480, "MJPG")
 
-                frames = 0
-                frame_batch: list[v4l2py.Frame] = []
-                for frame in camera:
-                    if frames == n:
-                        break
+                        time.sleep(0.2) # Give camera time to warm up
 
-                    frame_batch.append(frame)
-
-                    if len(frame_batch) % fps == fps - 1:
-                        for frame in frame_batch:
-                            frames += 1
+                        frames = 0
+                        frames_in_batch = 0
+                        batch_size = n // fps
+                        for frame in camera:
                             yield base64.b64encode(frame.data).decode("utf-8")
-                        frame_batch.clear()
-                        time.sleep(factor)
+                            frames += 1
 
-                camera.close()
+                            if frames >= n:
+                                break
+
+                            if frames_in_batch + 1 >= batch_size:
+                                time.sleep(factor / fps)
+
+                            frames_in_batch += 1
+                            frames_in_batch %= batch_size
+
+                        camera.close()
+                    break
+                except Exception as e:
+                    print(f"Failed to capture video. Reason: {str(e)} - Trying another device")
 
         return StatefulGenerator(gen())
