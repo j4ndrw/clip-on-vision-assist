@@ -2,6 +2,7 @@ import z from "zod";
 import { v4 as uuidv4 } from "uuid";
 import type { ApiError, Method } from "./types";
 import type { DeferredPromise } from "@/utils";
+import { DEV_API_HOST } from "./constants";
 
 export type ApiRequestConfig<
   TMethod extends Method,
@@ -15,6 +16,7 @@ export type ApiRequestConfig<
   mock?: TResponseSchema extends undefined
   ? undefined
   : z.infer<TResponseSchema>;
+  allowInDevMode?: boolean;
 };
 
 export type RequestRet<TResponseSchema extends z.ZodType> = DeferredPromise<
@@ -50,6 +52,7 @@ export const createApiRequest =
     requestSchema,
     responseSchema,
     mock,
+    allowInDevMode,
   }: ApiRequestConfig<TMethod, TRequestSchema, TResponseSchema>): ((
     queryParams?: Record<string, string>,
     body?: typeof requestSchema extends undefined
@@ -63,7 +66,7 @@ export const createApiRequest =
         requestId,
         promise: async () => {
           const abortController = new AbortController();
-          if (import.meta.env.DEV) {
+          if (import.meta.env.DEV && allowInDevMode !== true) {
             if (!responseSchema)
               return Object.assign(
                 z
@@ -98,17 +101,49 @@ export const createApiRequest =
           });
 
           const endpoint = (() => {
-          if (!queryParams) return rawEndpoint;
+            if (!queryParams) return rawEndpoint;
 
-          const searchParams = new URLSearchParams(queryParams).toString()
-          return `${rawEndpoint}?${searchParams}`
-        })();
-          const response = await fetch(endpoint, requestOptions);
+            const searchParams = new URLSearchParams(queryParams).toString();
+            return `${rawEndpoint}?${searchParams}`;
+          })();
+          try {
+            const response = await fetch(
+              import.meta.env.DEV && allowInDevMode ? `${DEV_API_HOST}${endpoint}` : endpoint,
+              requestOptions,
+            );
 
-          if (!response.ok) {
-            const errorJson = await response.json();
+            if (!response.ok) {
+              const errorJson = await response.json();
+              const cancelled = abortController.signal.aborted;
+
+              return {
+                requestId,
+                cancelled,
+                data: undefined,
+                error: undefined,
+                success: false,
+                apiError: {
+                  message:
+                    "message" in errorJson
+                      ? (errorJson.message as string)
+                      : "Unexpected error - Something went wrong...",
+                },
+              };
+            }
+
+            if (!responseSchema)
+              return Object.assign(z.any().safeParse({}), {
+                requestId,
+                apiError: null,
+              });
+
+            const json = await response.json();
+            return Object.assign(responseSchema.safeParse(json), {
+              requestId,
+              apiError: null,
+            });
+          } catch (err) {
             const cancelled = abortController.signal.aborted;
-
             return {
               requestId,
               cancelled,
@@ -116,25 +151,10 @@ export const createApiRequest =
               error: undefined,
               success: false,
               apiError: {
-                message:
-                  "message" in errorJson
-                    ? (errorJson.message as string)
-                    : "Unexpected error - Something went wrong...",
+                message: (err as Error).message,
               },
             };
           }
-
-          if (!responseSchema)
-            return Object.assign(z.any().safeParse({}), {
-              requestId,
-              apiError: null,
-            });
-
-          const json = await response.json();
-          return Object.assign(responseSchema.safeParse(json), {
-            requestId,
-            apiError: null,
-          });
         },
       };
     };

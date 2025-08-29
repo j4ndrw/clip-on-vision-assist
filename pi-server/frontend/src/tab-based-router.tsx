@@ -12,7 +12,7 @@ type Props<
     label: string;
   }>,
 > = {
-  title: string;
+  title?: string;
   tabs: TTabs;
   views: Record<TTabs[number]["id"], () => React.JSX.Element>;
 };
@@ -24,14 +24,18 @@ function TabBasedRouter<
     label: string;
   }>,
 >({ title, tabs, views }: Props<TTabs>) {
-  const [activeTab, setActiveTab] =
-    useState<(typeof tabs)[number]["id"]>(tabs[0].id);
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>(
+    tabs[0].id,
+  );
 
   const handleTabClick = (idx: number) => () => {
     setActiveTab(tabs[idx].id);
   };
 
-  const CurrentView: () => React.JSX.Element = useMemo(() => views[activeTab], [views, activeTab]);
+  const CurrentView: () => React.JSX.Element = useMemo(
+    () => views[activeTab],
+    [views, activeTab],
+  );
 
   return (
     <Container
@@ -54,15 +58,13 @@ function TabBasedRouter<
           gap: "2rem",
         }}
       >
-        <Typography variant="h6">
-          {title}
-        </Typography>
+        {title ? <Typography variant="h6">{title}</Typography> : null}
         <Container
           sx={{
             display: "flex",
-            flexWrap: 'wrap',
+            flexWrap: "wrap",
             gap: "0.5rem 0.5rem",
-            justifyContent: "center"
+            justifyContent: "center",
           }}
         >
           {tabs.map((tab, idx) => (
