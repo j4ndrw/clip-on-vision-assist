@@ -14,10 +14,10 @@ import Container from "@mui/material/Container";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Modal from "@mui/material/Modal";
-import Typography from "@mui/material/Typography";
 import Snackbar from "@/design-system/snackbar";
 import { useAlertSnackbars } from "@/hooks/use-alert-snackbars";
 import { useListenUntilBackOnline } from "@/hooks/use-listen-until-back-online";
+import Alert from "@mui/material/Alert";
 
 function ConnectToNetwork() {
   const {
@@ -177,10 +177,10 @@ function ConnectToNetwork() {
                 </Button>
               </Container>
               {loading ? (
-                <Typography variant="body1">
+                <Alert variant="outlined" severity="info">
                   NOTE: You may have to manually reconnect to the hotspot if
                   disconnected.
-                </Typography>
+                </Alert>
               ) : null}
             </Container>
           </Box>

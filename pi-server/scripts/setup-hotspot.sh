@@ -22,8 +22,8 @@ function setup_static_ip()
 
 function configure_hostapd()
 {
-    sed -i "s/<SSID>/$HOTSPOT_SSID/g" $FIRMWARE_DIR/etc/hostapd/hostapd.conf
-    sed -i "s/<PASSWORD>/$HOTSPOT_PASSWORD/g" $FIRMWARE_DIR/etc/hostapd/hostapd.conf
+    sed -i "s/^ssid=\(.*\)/ssid=$HOTSPOT_SSID/g" $FIRMWARE_DIR/etc/hostapd/hostapd.conf
+    sed -i "s/^wpa_passphrase=\(.*\)/wpa_passphrase=$HOTSPOT_PASSWORD/g" $FIRMWARE_DIR/etc/hostapd/hostapd.conf
 
     sudo cp $FIRMWARE_DIR/etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf
 
