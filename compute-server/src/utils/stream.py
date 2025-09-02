@@ -1,6 +1,7 @@
 import base64
 import json
 from typing import Callable
+
 import piper
 
 

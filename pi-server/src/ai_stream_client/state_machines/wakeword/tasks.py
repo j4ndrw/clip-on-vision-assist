@@ -44,7 +44,11 @@ class WakewordBasedStateMachineTasks:
             for frame in video_stream:
                 video_buf.append(frame)
 
-            is_audio_captured = lambda: 0 < len(audio_buf) < self.client.io.microphone_config.audio_capture_config.max_chunks
+            is_audio_captured = (
+                lambda: 0
+                < len(audio_buf)
+                < self.client.io.microphone_config.audio_capture_config.max_chunks
+            )
             while (
                 not silence_detected(
                     config=self.client.io.microphone_config.silence_detection_config
@@ -57,6 +61,7 @@ class WakewordBasedStateMachineTasks:
 
             API.send_camera_frames(video_buf)
             API.send_microphone_audio(as_base64(b"".join(audio_buf)))
+
         return task
 
     def stall(self):

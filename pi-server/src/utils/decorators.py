@@ -37,6 +37,7 @@ class LoopBreak:
     def check(x: Any):
         return isinstance(x, LoopBreak)
 
+
 def looped(func: Callable[[], bool]):
     @wraps(func)
     def wrapper(*args, **kwargs):

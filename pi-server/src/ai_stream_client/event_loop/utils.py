@@ -8,8 +8,8 @@ from src.control_center.services.os.audio.set_audio_device_to_hands_free_mode im
 from src.control_center.services.wifi.connect_to_network import \
     connect_to_network_async
 from src.env import environment
-from src.utils.decorators import (LoopBreak, looped_async, production_only_async,
-                                  with_interrupt_async)
+from src.utils.decorators import (LoopBreak, looped_async,
+                                  production_only_async, with_interrupt_async)
 
 
 async def try_connect_audio():
@@ -21,7 +21,9 @@ async def try_connect_audio():
             await set_audio_device_to_hands_free_mode_async()
             await asyncio.sleep(5)
         except Exception:
-            bluetooth_headphones_mac_address = environment.get()["BLUETOOTH_HEADPHONES_MAC"]
+            bluetooth_headphones_mac_address = environment.get()[
+                "BLUETOOTH_HEADPHONES_MAC"
+            ]
             if bluetooth_headphones_mac_address is None:
                 print("Bluetooth headphones must be connected!")
                 sys.exit(1)
@@ -42,6 +44,7 @@ async def try_connect_audio():
         return LoopBreak()
 
     await fn()
+
 
 async def try_connect_wifi():
     @production_only_async

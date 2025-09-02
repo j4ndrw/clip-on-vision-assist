@@ -1,13 +1,13 @@
 import v4l2py
 
-from src.utils.video import get_usb_video_device_ids, keep_video_devices_with_mjpg_support
+from src.utils.video import (get_usb_video_device_ids,
+                             keep_video_devices_with_mjpg_support)
+
 
 def stream_camera_feed():
     while True:
         device_ids = list(
-            filter(
-                keep_video_devices_with_mjpg_support, get_usb_video_device_ids()
-            )
+            filter(keep_video_devices_with_mjpg_support, get_usb_video_device_ids())
         )
         if len(device_ids) == 0:
             return (

@@ -3,11 +3,13 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from piper import AudioChunk
+
 from src.camera_frames.camera_frames import camera_frames
 from src.microphone_chunks.microphone_chunks import microphone_chunks
 from src.state.state import State, states
 from src.systems.ai_system import AISystem
 from src.utils.stream import as_line, audio_chunk_as_line
+
 
 @dataclass
 class AIStreamStateMachineConfig:
@@ -43,13 +45,19 @@ class AIStreamStateMachineSideEffects:
         camera_frames.clear()
         self.config.set_microphone_state("ready")
 
+
 @dataclass
 class AIStreamStateMachineEvent:
-    CAPTURE_WAKEWORD: str = field(default=as_line(json.dumps({"type": "capture-wakeword"})))
+    CAPTURE_WAKEWORD: str = field(
+        default=as_line(json.dumps({"type": "capture-wakeword"}))
+    )
     CAPTURE_PROMPT: str = field(default=as_line(json.dumps({"type": "capture-prompt"})))
     STALL: str = field(default=as_line(json.dumps({"type": "stall"})))
-    AI_SPEECH: Callable[[AudioChunk], str] = field(default=audio_chunk_as_line("ai-speech"))
+    AI_SPEECH: Callable[[AudioChunk], str] = field(
+        default=audio_chunk_as_line("ai-speech")
+    )
     DONE: str = field(default=as_line(json.dumps({"type": "done"})))
+
 
 class AIStreamStateMachineEventProducer:
     def __init__(self, *, config: AIStreamStateMachineConfig):
@@ -140,6 +148,7 @@ class AIStreamStateMachine:
         self.side_effects.reset_state()
         for event in self.event_producer.done():
             yield event
+
 
 def ai_stream_state_machine(*, config: AIStreamStateMachineConfig):
     state_machine = AIStreamStateMachine(config=config).generator()

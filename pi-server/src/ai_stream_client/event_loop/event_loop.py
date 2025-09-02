@@ -109,7 +109,9 @@ async def run_state_machine(
 ):
     @looped_async
     @with_interrupt_async()
-    async def fn(*, client: AIStreamClient, state: State, state_machine: StateMachine) -> LoopBreak:
+    async def fn(
+        *, client: AIStreamClient, state: State, state_machine: StateMachine
+    ) -> LoopBreak:
         try:
             API.healthcheck()
             await read_stream(client=client, state=state, state_machine=state_machine)

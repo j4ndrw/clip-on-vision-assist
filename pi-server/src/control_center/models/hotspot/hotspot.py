@@ -34,5 +34,6 @@ class HotspotConfig(BaseSchema):
             value=str(self.password),
         )
 
+
 class HotspotConfigDTO(BaseSchema):
     ssid: str

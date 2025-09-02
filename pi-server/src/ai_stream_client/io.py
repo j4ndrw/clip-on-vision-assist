@@ -10,7 +10,8 @@ from src.ai_stream_client.constants import (CHANNELS, CHUNK_SIZE,
 from src.control_center.models.peripheral.camera import CameraConfig
 from src.control_center.models.peripheral.microphone import MicrophoneConfig
 from src.utils.generator import StatefulGenerator
-from src.utils.video import get_usb_video_device_ids, keep_video_devices_with_mjpg_support
+from src.utils.video import (get_usb_video_device_ids,
+                             keep_video_devices_with_mjpg_support)
 
 
 class AIStreamIO:
@@ -19,7 +20,7 @@ class AIStreamIO:
         *,
         microphone_config: MicrophoneConfig = MicrophoneConfig.from_environment(),
         camera_config: CameraConfig = CameraConfig.from_environment(),
-        on_microphone_chunk: Optional[Callable[[bytes], None]] = None
+        on_microphone_chunk: Optional[Callable[[bytes], None]] = None,
     ):
         self.microphone_buffer: list[bytes] = []
         self.microphone_stream: Optional[pyaudio.Stream] = None
@@ -65,7 +66,9 @@ class AIStreamIO:
             return (in_data, pyaudio.paContinue)
 
         if self.microphone_stream_start_time is None:
-            self.microphone_stream_start_time = self.microphone_stream_start_time or time.time()
+            self.microphone_stream_start_time = (
+                self.microphone_stream_start_time or time.time()
+            )
 
         if not in_data:
             return (in_data, pyaudio.paContinue)
@@ -105,7 +108,7 @@ class AIStreamIO:
                         capture = v4l2py.VideoCapture(camera)
                         capture.set_format(640, 480, "MJPG")
 
-                        time.sleep(0.2) # Give camera time to warm up
+                        time.sleep(0.2)  # Give camera time to warm up
 
                         frames = 0
                         frames_in_batch = 0
@@ -126,6 +129,8 @@ class AIStreamIO:
                         camera.close()
                     break
                 except Exception as e:
-                    print(f"Failed to capture video. Reason: {str(e)} - Trying another device")
+                    print(
+                        f"Failed to capture video. Reason: {str(e)} - Trying another device"
+                    )
 
         return StatefulGenerator(gen())
