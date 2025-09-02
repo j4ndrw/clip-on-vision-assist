@@ -20,12 +20,13 @@ class WakewordBasedStateMachineTasks:
                 play_asset(READY_TO_LISTEN, volume_db=-12)
                 time.sleep(0.2)
 
-            audio_chunk = b"".join(
-                self.client.io.capture_audio_until(lambda chunks: len(chunks) > 1)
-                .consume()
-                .ret
-            )
-            API.send_microphone_audio(as_base64(audio_chunk))
+            audio_buf: list[bytes] = []
+            self.client.io.on_microphone_chunk = audio_buf.append
+            while len(audio_buf) <= 1:
+                pass
+            self.client.io.on_microphone_chunk = None
+
+            API.send_microphone_audio(as_base64(b"".join(audio_buf)))
 
         return task
 
@@ -34,28 +35,28 @@ class WakewordBasedStateMachineTasks:
             play_asset(WAKEWORD_DETECTED)
             self.client.io.restart_audio_stream()
 
-            audio_buf = b""
+            audio_buf: list[bytes] = []
             video_buf: list[str] = []
+
+            self.client.io.on_microphone_chunk = audio_buf.append
 
             video_stream = self.client.io.capture_video()
             for frame in video_stream:
-                audio_chunk = self.client.io.capture_audio_chunk().consume().ret
-                audio_buf += audio_chunk
                 video_buf.append(frame)
 
-            API.send_camera_frames(video_buf)
-
-            audio_buf += b"".join(
-                self.client.io.capture_audio_until(
-                    silence_detected(
-                        config=self.client.io.microphone_config.silence_detection_config
-                    )
+            is_audio_captured = lambda: 0 < len(audio_buf) < self.client.io.microphone_config.audio_capture_config.max_chunks
+            while (
+                not silence_detected(
+                    config=self.client.io.microphone_config.silence_detection_config
                 )
-                .consume()
-                .ret
-            )
-            API.send_microphone_audio(as_base64(audio_buf))
+                and is_audio_captured()
+            ):
+                pass
 
+            self.client.io.on_microphone_chunk = None
+
+            API.send_camera_frames(video_buf)
+            API.send_microphone_audio(as_base64(b"".join(audio_buf)))
         return task
 
     def stall(self):
