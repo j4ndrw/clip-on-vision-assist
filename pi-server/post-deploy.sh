@@ -42,6 +42,8 @@ function advertise_control_center_hostname_via_mdns()
     sudo cp $DEST_DIR/firmware/etc/avahi/services/control-center.service /etc/avahi/services/control-center.service
 }
 
+echo "ENVIRONMENT=production" >> $DEST_DIR/.env
+
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/scripts/setup-hotspot.sh
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/firmware/etc/systemd/system/$SYSTEMD_CREATE_HOTSPOT_SERVICE
 sed -i "s#<DEST_DIR>#$DEST_DIR#g" $DEST_DIR/firmware/etc/nginx/sites-available/control-center.conf
