@@ -1,15 +1,20 @@
 import asyncio
 import sys
 
-from src.control_center.services.bluetooth.connect_bluetooth_headphones import \
-    connect_bluetooth_headphones
-from src.control_center.services.os.audio.set_audio_device_to_hands_free_mode import \
-    set_audio_device_to_hands_free_mode_async
-from src.control_center.services.wifi.connect_to_network import \
-    connect_to_network_async
+from src.control_center.services.bluetooth.connect_bluetooth_headphones import (
+    connect_bluetooth_headphones,
+)
+from src.control_center.services.os.audio.set_audio_device_to_hands_free_mode import (
+    set_audio_device_to_hands_free_mode_async,
+)
+from src.control_center.services.wifi.connect_to_network import connect_to_network_async
 from src.env import environment
-from src.utils.decorators import (LoopBreak, looped_async,
-                                  production_only_async, with_interrupt_async)
+from src.utils.decorators import (
+    LoopBreak,
+    looped_async,
+    production_only_async,
+    with_interrupt_async,
+)
 
 
 async def try_connect_audio():

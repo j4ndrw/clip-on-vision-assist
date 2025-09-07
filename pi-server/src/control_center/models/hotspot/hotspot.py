@@ -13,12 +13,12 @@ class HotspotConfig(BaseSchema):
         hotspot_ssid = env.get("HOTSPOT_SSID", None)
         hotspot_password = env.get("HOTSPOT_PASSWORD", None)
 
-        assert (
-            hotspot_ssid is not None
-        ), "`PERIPHERAL_MICROPHONE_CAPTURE_SECONDS` environment variable is not defined!"
-        assert (
-            hotspot_password is not None
-        ), "`PERIPHERAL_MICROPHONE_CAPTURE_MAX_CHUNKS` environment variable is not defined!"
+        assert hotspot_ssid is not None, (
+            "`PERIPHERAL_MICROPHONE_CAPTURE_SECONDS` environment variable is not defined!"
+        )
+        assert hotspot_password is not None, (
+            "`PERIPHERAL_MICROPHONE_CAPTURE_MAX_CHUNKS` environment variable is not defined!"
+        )
 
         return HotspotConfig(
             ssid=hotspot_ssid,

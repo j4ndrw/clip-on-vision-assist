@@ -33,18 +33,18 @@ class MicrophoneConfig(BaseSchema):
             "PERIPHERAL_MICROPHONE_SILENCE_THRESHOLD_DBFS", None
         )
 
-        assert (
-            peripheral_microphone_capture_seconds is not None
-        ), "`PERIPHERAL_MICROPHONE_CAPTURE_SECONDS` environment variable is not defined!"
-        assert (
-            peripheral_microphone_capture_max_chunks is not None
-        ), "`PERIPHERAL_MICROPHONE_CAPTURE_MAX_CHUNKS` environment variable is not defined!"
-        assert (
-            peripheral_microphone_silence_detection_min_silence_len_ms is not None
-        ), "`PERIPHERAL_MICROPHONE_SILENCE_DETECTION_MIN_SILENCE_LEN_MS` environment variable is not defined!"
-        assert (
-            peripheral_microphone_silence_threshold_dbfs is not None
-        ), "`PERIPHERAL_MICROPHONE_SILENCE_THRESHOLD_DBFS` environment variable is not defined!"
+        assert peripheral_microphone_capture_seconds is not None, (
+            "`PERIPHERAL_MICROPHONE_CAPTURE_SECONDS` environment variable is not defined!"
+        )
+        assert peripheral_microphone_capture_max_chunks is not None, (
+            "`PERIPHERAL_MICROPHONE_CAPTURE_MAX_CHUNKS` environment variable is not defined!"
+        )
+        assert peripheral_microphone_silence_detection_min_silence_len_ms is not None, (
+            "`PERIPHERAL_MICROPHONE_SILENCE_DETECTION_MIN_SILENCE_LEN_MS` environment variable is not defined!"
+        )
+        assert peripheral_microphone_silence_threshold_dbfs is not None, (
+            "`PERIPHERAL_MICROPHONE_SILENCE_THRESHOLD_DBFS` environment variable is not defined!"
+        )
 
         audio_capture_config = AudioCaptureConfig(
             seconds_per_chunk=int(peripheral_microphone_capture_seconds),

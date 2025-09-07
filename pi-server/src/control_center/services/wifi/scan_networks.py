@@ -23,9 +23,7 @@ def scan_networks(
     time.sleep(2)
 
     wifi_networks = [
-        WiFiNetwork(
-            ssid=profile.ssid, signal_strength_dbm=profile.signal
-        )  # pyright: ignore
+        WiFiNetwork(ssid=profile.ssid, signal_strength_dbm=profile.signal)  # pyright: ignore
         for profile in iface.scan_results()
         if isinstance(profile, pywifi.Profile) and profile.ssid is not None
     ]

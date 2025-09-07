@@ -5,13 +5,19 @@ from typing import Callable, Mapping, Optional
 import pyaudio
 import v4l2py
 
-from src.ai_stream_client.constants import (CHANNELS, CHUNK_SIZE,
-                                            SAMPLE_FORMAT, SAMPLE_RATE)
+from src.ai_stream_client.constants import (
+    CHANNELS,
+    CHUNK_SIZE,
+    SAMPLE_FORMAT,
+    SAMPLE_RATE,
+)
 from src.control_center.models.peripheral.camera import CameraConfig
 from src.control_center.models.peripheral.microphone import MicrophoneConfig
 from src.utils.generator import StatefulGenerator
-from src.utils.video import (get_usb_video_device_ids,
-                             keep_video_devices_with_mjpg_support)
+from src.utils.video import (
+    get_usb_video_device_ids,
+    keep_video_devices_with_mjpg_support,
+)
 
 
 class AIStreamIO:
