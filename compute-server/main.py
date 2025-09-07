@@ -22,6 +22,7 @@ from src.state_machines.ai_stream_state_machine import (
     ai_stream_state_machine,
 )
 from src.systems.ai_system import AISystem
+from src.utils.api.middleware import MiddlewareBuilder, protect_with_api_key
 
 app = FastAPI()
 app.add_middleware(
@@ -31,6 +32,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+MiddlewareBuilder(app).add(protect_with_api_key())
 
 openwakeword.utils.download_models()
 

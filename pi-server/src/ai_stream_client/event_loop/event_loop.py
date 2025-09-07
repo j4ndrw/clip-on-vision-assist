@@ -34,10 +34,14 @@ async def consume_event(state: State):
 
 
 def headers():
-    llm_backend_endpoint = environment.get()["LLM_BACKEND_ENDPOINT"]
-    llm_backend_api_key = environment.get()["LLM_BACKEND_API_KEY"]
-    llm = environment.get()["LLM"]
+    compute_server_api_key = environment.get().get("COMPUTE_SERVER_API_KEY", None)
+    llm_backend_endpoint = environment.get().get("LLM_BACKEND_ENDPOINT", None)
+    llm_backend_api_key = environment.get().get("LLM_BACKEND_API_KEY", None)
+    llm = environment.get().get("LLM", None)
 
+    assert compute_server_api_key is not None, (
+        "`COMPUTE_SERVER_API_KEY` environment variable not set!"
+    )
     assert llm_backend_endpoint is not None, (
         "`LLM_BACKEND_ENDPOINT` environment variable not set!"
     )
@@ -47,6 +51,7 @@ def headers():
     assert llm is not None, "`LLM` environment variable not set!"
 
     return {
+        "Authorization": f"Bearer {compute_server_api_key}",
         "x-llm-backend-endpoint": llm_backend_endpoint or "",
         "x-llm-backend-api-key": llm_backend_api_key or "",
         "x-llm": llm or "",
