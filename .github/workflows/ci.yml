@@ -1,0 +1,52 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.10 for Compute Server
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install Ruff for Compute Server
+        run: pip install ruff
+
+      - name: Lint Compute Server
+        run: ruff check ./compute-server
+
+      - name: Check formatting in Compute Server
+        run: ruff format --check --diff ./compute-server
+
+      - name: Set up Python 3.9 for Pi Server
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install Ruff for Pi Server
+        run: pip install ruff
+
+      - name: Lint Pi Server
+        run: ruff check ./pi-server
+
+      - name: Check formatting in Pi Server
+        run: ruff format --check --diff ./pi-server
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install control center frontend dependencies
+        run: cd ./pi-server/frontend && npm install
+
+      - name: Lint - Control Center Frontend
+        run: cd ./pi-server/frontend && npx eslint src --ext .js,.jsx,.ts,.tsx
