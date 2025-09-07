@@ -1,2 +1,0 @@
-COMPUTE_SERVER_API_BASE_URL = "http://192.168.100.16:8000/api"
-# COMPUTE_SERVER_API_BASE_URL = "http://localhost:8000/api"

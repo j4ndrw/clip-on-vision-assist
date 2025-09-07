@@ -7,6 +7,7 @@ import {
   Wifi as WifiIcon,
   CellTower as HotspotIcon,
   Science as TestbedIcon,
+  Storage as ComputeServerIcon,
 } from "@mui/icons-material";
 
 import Bluetooth from "./views/bluetooth";
@@ -15,6 +16,7 @@ import Peripherals from "./views/peripherals";
 import Wifi from "./views/wifi";
 import HotspotConfiguration from "./views/hotspot-configuration";
 import Testbed from "./views/testbed";
+import ComputeServerConfiguration from "./views/compute-server-configuration";
 
 function App() {
   return (
@@ -48,6 +50,11 @@ function App() {
             label: "Hotspot Configuration",
           },
           {
+            id: "compute-server-configuration",
+            Icon: () => <ComputeServerIcon />,
+            label: "Compute Server Configuration",
+          },
+          {
             id: "testbed",
             Icon: () => <TestbedIcon />,
             label: "Testbed",
@@ -60,6 +67,7 @@ function App() {
         peripherals: Peripherals,
         "llm-configuration": LlmConfiguration,
         "hotspot-configuration": HotspotConfiguration,
+        "compute-server-configuration": ComputeServerConfiguration,
         testbed: Testbed,
       }}
     />
