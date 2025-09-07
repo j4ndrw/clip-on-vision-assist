@@ -7,8 +7,7 @@ import pydub.playback
 import pydub.silence
 
 from src.ai_stream_client.constants import CHANNELS, SAMPLE_RATE, SAMPLE_WIDTH
-from src.control_center.models.peripheral.microphone import \
-    SilenceDetectionConfig
+from src.control_center.models.peripheral.microphone import SilenceDetectionConfig
 
 
 def silence_detected(

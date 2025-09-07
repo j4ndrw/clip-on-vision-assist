@@ -3,8 +3,7 @@ from http import HTTPStatus
 from flask import Flask, Response, json
 from flask_cors import CORS
 
-from src.control_center.routes import (bluetooth, hotspot, llm, peripheral,
-                                       testbed, wifi)
+from src.control_center.routes import bluetooth, hotspot, llm, peripheral, testbed, wifi
 
 app = Flask(__name__)
 CORS(app)

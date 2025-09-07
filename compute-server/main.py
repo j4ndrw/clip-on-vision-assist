@@ -18,7 +18,9 @@ from src.requests.microphone_stream import MicrophoneStreamRequest
 from src.requests.post_camera_frames import PostCameraFramesRequest
 from src.speech.client import speech_client
 from src.state_machines.ai_stream_state_machine import (
-    AIStreamStateMachineConfig, ai_stream_state_machine)
+    AIStreamStateMachineConfig,
+    ai_stream_state_machine,
+)
 from src.systems.ai_system import AISystem
 
 app = FastAPI()

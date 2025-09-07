@@ -5,13 +5,13 @@ import httpx
 
 from src.ai_stream_client.api import API
 from src.ai_stream_client.client import AIStreamClient
-from src.ai_stream_client.event_loop.utils import (try_connect_audio,
-                                                   try_connect_wifi)
-from src.ai_stream_client.state_machines.register import \
-    currently_active_state_machine
+from src.ai_stream_client.event_loop.utils import try_connect_audio, try_connect_wifi
+from src.ai_stream_client.state_machines.register import currently_active_state_machine
 from src.ai_stream_client.state_machines.state import State
 from src.ai_stream_client.state_machines.state_machine import (
-    StateMachine, StateMachineConfig)
+    StateMachine,
+    StateMachineConfig,
+)
 from src.env import environment
 from src.utils.decorators import LoopBreak, looped_async, with_interrupt_async
 
@@ -38,12 +38,12 @@ def headers():
     llm_backend_api_key = environment.get()["LLM_BACKEND_API_KEY"]
     llm = environment.get()["LLM"]
 
-    assert (
-        llm_backend_endpoint is not None
-    ), "`LLM_BACKEND_ENDPOINT` environment variable not set!"
-    assert (
-        llm_backend_api_key is not None
-    ), "`LLM_BACKEND_API_KEY` environment variable not set!"
+    assert llm_backend_endpoint is not None, (
+        "`LLM_BACKEND_ENDPOINT` environment variable not set!"
+    )
+    assert llm_backend_api_key is not None, (
+        "`LLM_BACKEND_API_KEY` environment variable not set!"
+    )
     assert llm is not None, "`LLM` environment variable not set!"
 
     return {
@@ -59,7 +59,7 @@ async def process_stream_event(
     http_client: httpx.AsyncClient,
     ai_stream_client: AIStreamClient,
     state: State,
-    state_machine: StateMachine
+    state_machine: StateMachine,
 ):
     @with_interrupt_async()
     async def fn(
@@ -68,7 +68,7 @@ async def process_stream_event(
         http_client: httpx.AsyncClient,
         ai_stream_client: AIStreamClient,
         state: State,
-        state_machine: StateMachine
+        state_machine: StateMachine,
     ):
         http_client.headers = headers()
         state, _ = await asyncio.gather(

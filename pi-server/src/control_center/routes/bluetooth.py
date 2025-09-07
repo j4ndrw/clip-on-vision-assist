@@ -3,14 +3,18 @@ from http import HTTPStatus
 from flask import Blueprint, Response, json, request
 from flask_pydantic import validate
 
-from src.control_center.models.bluetooth.endpoint.connect_bluetooth_headphones import \
-    ConnectBluetoothHeadphonesRequest
-from src.control_center.models.bluetooth.endpoint.get_bluetooth_devices import \
-    GetBluetoothDevicesResponse
-from src.control_center.services.bluetooth.connect_bluetooth_headphones import \
-    connect_bluetooth_headphones
-from src.control_center.services.bluetooth.get_bluetooth_devices import \
-    get_bluetooth_devices
+from src.control_center.models.bluetooth.endpoint.connect_bluetooth_headphones import (
+    ConnectBluetoothHeadphonesRequest,
+)
+from src.control_center.models.bluetooth.endpoint.get_bluetooth_devices import (
+    GetBluetoothDevicesResponse,
+)
+from src.control_center.services.bluetooth.connect_bluetooth_headphones import (
+    connect_bluetooth_headphones,
+)
+from src.control_center.services.bluetooth.get_bluetooth_devices import (
+    get_bluetooth_devices,
+)
 from src.control_center.sync.async_loop import async_loop
 
 bp = Blueprint("bluetooth", __name__)

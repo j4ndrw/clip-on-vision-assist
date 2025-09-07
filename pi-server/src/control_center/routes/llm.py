@@ -4,22 +4,28 @@ from flask import Blueprint, Response, json, request
 from flask_pydantic import validate
 
 from src.control_center.models.error import Error
-from src.control_center.models.llm.endpoint.amend_llm_configuration import \
-    AmendLLMConfigurationRequest
-from src.control_center.models.llm.endpoint.get_available_llms import \
-    GetAvailableLLMsResponse
-from src.control_center.models.llm.endpoint.get_current_llm_configuration import \
-    GetCurrentLLMConfigurationResponse
-from src.control_center.models.llm.endpoint.get_llm_endpoint_suggestions import \
-    GetLLMEndpointSuggestionsResponse
-from src.control_center.services.llm.amend_llm_configuration import \
-    amend_llm_configuration
-from src.control_center.services.llm.get_available_llms import \
-    get_available_llms
-from src.control_center.services.llm.get_current_llm_configuration import \
-    get_current_llm_configuration
-from src.control_center.services.llm.get_llm_endpoint_suggestions import \
-    get_llm_endpoint_suggestions
+from src.control_center.models.llm.endpoint.amend_llm_configuration import (
+    AmendLLMConfigurationRequest,
+)
+from src.control_center.models.llm.endpoint.get_available_llms import (
+    GetAvailableLLMsResponse,
+)
+from src.control_center.models.llm.endpoint.get_current_llm_configuration import (
+    GetCurrentLLMConfigurationResponse,
+)
+from src.control_center.models.llm.endpoint.get_llm_endpoint_suggestions import (
+    GetLLMEndpointSuggestionsResponse,
+)
+from src.control_center.services.llm.amend_llm_configuration import (
+    amend_llm_configuration,
+)
+from src.control_center.services.llm.get_available_llms import get_available_llms
+from src.control_center.services.llm.get_current_llm_configuration import (
+    get_current_llm_configuration,
+)
+from src.control_center.services.llm.get_llm_endpoint_suggestions import (
+    get_llm_endpoint_suggestions,
+)
 
 bp = Blueprint("llm", __name__)
 

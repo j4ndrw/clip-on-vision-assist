@@ -19,15 +19,15 @@ class CameraConfig(BaseSchema):
             "PERIPHERAL_CAMERA_WAIT_FOR_NEXT_BATCH_FACTOR", None
         )
 
-        assert (
-            peripheral_camera_num_frames_to_capture is not None
-        ), "`PERIPHERAL_CAMERA_NUM_FRAMES_TO_CAPTURE` environment variable is not defined!"
-        assert (
-            peripheral_camera_fps is not None
-        ), "`PERIPHERAL_CAMERA_FPS` environment variable is not defined!"
-        assert (
-            peripheral_camera_wait_for_next_batch_factor is not None
-        ), "`PERIPHERAL_CAMERA_WAIT_FOR_NEXT_BATCH_FACTOR` environment variable is not defined!"
+        assert peripheral_camera_num_frames_to_capture is not None, (
+            "`PERIPHERAL_CAMERA_NUM_FRAMES_TO_CAPTURE` environment variable is not defined!"
+        )
+        assert peripheral_camera_fps is not None, (
+            "`PERIPHERAL_CAMERA_FPS` environment variable is not defined!"
+        )
+        assert peripheral_camera_wait_for_next_batch_factor is not None, (
+            "`PERIPHERAL_CAMERA_WAIT_FOR_NEXT_BATCH_FACTOR` environment variable is not defined!"
+        )
 
         return CameraConfig(
             num_frames_to_capture=int(peripheral_camera_num_frames_to_capture),

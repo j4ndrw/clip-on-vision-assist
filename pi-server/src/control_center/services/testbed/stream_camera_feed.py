@@ -1,7 +1,9 @@
 import v4l2py
 
-from src.utils.video import (get_usb_video_device_ids,
-                             keep_video_devices_with_mjpg_support)
+from src.utils.video import (
+    get_usb_video_device_ids,
+    keep_video_devices_with_mjpg_support,
+)
 
 
 def stream_camera_feed():

@@ -10,9 +10,9 @@ from src.env import environment
 def get_available_llms(*, endpoint: str) -> tuple[list[str], Optional[Error]]:
     try:
         llm_backend_api_key = environment.get().get("LLM_BACKEND_API_KEY", None)
-        assert (
-            llm_backend_api_key is not None
-        ), "`LLM_BACKEND_API_KEY` environment variable not set!"
+        assert llm_backend_api_key is not None, (
+            "`LLM_BACKEND_API_KEY` environment variable not set!"
+        )
 
         response = httpx.get(
             f"{COMPUTE_SERVER_API_BASE_URL}/llm/list",

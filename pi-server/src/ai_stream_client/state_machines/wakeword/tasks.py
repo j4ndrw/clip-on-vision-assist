@@ -2,8 +2,11 @@ import time
 from typing import Any
 
 from src.ai_stream_client.api import API
-from src.ai_stream_client.assets import (PROMPT_CAPTURED, READY_TO_LISTEN,
-                                         WAKEWORD_DETECTED)
+from src.ai_stream_client.assets import (
+    PROMPT_CAPTURED,
+    READY_TO_LISTEN,
+    WAKEWORD_DETECTED,
+)
 from src.ai_stream_client.client import AIStreamClient
 from src.utils.audio import play_asset, silence_detected
 from src.utils.data import as_base64
@@ -44,7 +47,7 @@ class WakewordBasedStateMachineTasks:
             for frame in video_stream:
                 video_buf.append(frame)
 
-            is_audio_captured = (
+            is_audio_captured = (  # noqa: E731
                 lambda: 0
                 < len(audio_buf)
                 < self.client.io.microphone_config.audio_capture_config.max_chunks

@@ -3,12 +3,11 @@ from http import HTTPStatus
 from flask import Blueprint, Response, json, request
 from flask_pydantic import validate
 
-from src.control_center.models.wifi.endpoint.connect_to_network import \
-    ConnectToNetworkRequest
-from src.control_center.models.wifi.endpoint.scan_networks import \
-    ScanNetworksResponse
-from src.control_center.services.wifi.connect_to_network import \
-    connect_to_network
+from src.control_center.models.wifi.endpoint.connect_to_network import (
+    ConnectToNetworkRequest,
+)
+from src.control_center.models.wifi.endpoint.scan_networks import ScanNetworksResponse
+from src.control_center.services.wifi.connect_to_network import connect_to_network
 from src.control_center.services.wifi.scan_networks import scan_networks
 
 bp = Blueprint("wifi", __name__)

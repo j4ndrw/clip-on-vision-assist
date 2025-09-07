@@ -1,12 +1,11 @@
 from flask import Blueprint, Response
 from flask_pydantic import validate
 
-from src.control_center.models.testbed.endpoint.is_camera_connected import \
-    IsCameraConnectedResponse
-from src.control_center.services.testbed.is_camera_connected import \
-    is_camera_connected
-from src.control_center.services.testbed.stream_camera_feed import \
-    stream_camera_feed
+from src.control_center.models.testbed.endpoint.is_camera_connected import (
+    IsCameraConnectedResponse,
+)
+from src.control_center.services.testbed.is_camera_connected import is_camera_connected
+from src.control_center.services.testbed.stream_camera_feed import stream_camera_feed
 
 bp = Blueprint("testbed", __name__)
 
